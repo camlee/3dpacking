@@ -8,8 +8,8 @@ The space that the pieces are placed in is a rectangular cuboid (aka
 a box) of any size. ex. 5x5x5 or 3x3x10.
 
 The problem (pieces and space to place them in) can be solved with
-the answer(s) written to a text file. Blender (blender.org) can also 
-be used to visualize the solution or intermediate results. 
+the answer(s) written to a text file. Blender (blender.org) can also
+be used to visualize the solution or intermediate results.
 """
 
 from itertools import permutations, product
@@ -65,10 +65,10 @@ class Piece:
         Pre-calculating all orientations of the piece (rotations and shifts)
         for faster access later.
         """
-        
+
         self.rotations = []
         self.orientations = []
-        
+
         for axis in ("x", "y", "z"):
             for unique_rotation in (0, 1, 2, 3):
                 if unique_rotation == 0:
@@ -304,7 +304,7 @@ class Problem:
 
 
 
-def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions_history, out_file_name, start_time, 
+def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions_history, out_file_name, start_time,
         minimum_pieces, parent=True, stop_at=0, timeout=None, placed_cb=None, placing_cb=None, failed_place_cb=None):
     """
     Brute force algorithm for placing all pieces in the space. Calls
@@ -335,7 +335,7 @@ def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions
             print("Found solution %s. %s minutes in." % (len(solutions_history), time_delta))
             # print("Space: %s" % (space.display()))
 
-            with open(out_file_name, "a") as out_file:                
+            with open(out_file_name, "a") as out_file:
                 out_file.write("Solution %s (at %.1f minutes in):\n" % (len(solutions_history), time_delta))
                 out_file.write(space.display())
                 out_file.write("\n\n")
@@ -380,10 +380,10 @@ def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions
                     if placed_cb:
                         placed_cb(rotated_piece, (x, y, z))
 
-                    minimum_pieces = place_all_pieces_in_all_spots_and_check_if_solution(space, pieces[1:], solutions_history, 
+                    minimum_pieces = place_all_pieces_in_all_spots_and_check_if_solution(space, pieces[1:], solutions_history,
                             out_file_name, start_time, minimum_pieces, parent=False, stop_at=stop_at, timeout=timeout,
                             placed_cb=placed_cb, placing_cb=placing_cb, failed_place_cb=failed_place_cb)
-                
+
                 else:
                     pass
                     # print("Space split into unsolvable regions of sizes: %s. Backing out last placement." % (regions,))
@@ -409,8 +409,8 @@ class BlenderApi():
     def __init__(self):
         self.object_id = 0
 
-        self.redraw = False # If True, the screen will be refreshed during running of the script.
-                           # The API that does this is described by Blender as unsupported so it 
+        self.redraw = True # If True, the screen will be refreshed during running of the script.
+                           # The API that does this is described by Blender as unsupported so it
                            # needs to be set to False in some cases. ex:
                            # * To see the output of print statements
 
@@ -436,10 +436,10 @@ class BlenderApi():
             self.draw_piece(piece, (x_offset, y_offset, 0))
 
     def draw_all_pieces(self):
-        self._layout_pieces(real_problem.pieces)
+        self._layout_pieces(problem4.pieces)
 
     def draw_all_orientations(self, num_rows=8, piece_index=0):
-        self._layout_pieces(real_problem.pieces[piece_index].orientations)
+        self._layout_pieces(problem4.pieces[piece_index].orientations)
 
     def solve_and_draw(self, stop_at=None, **kwargs):
         bpy = self.bpy
@@ -447,8 +447,9 @@ class BlenderApi():
             print("No stop_at provided. Ending now.")
             return
         kwargs["timeout"] = 120
-  
-        problem = problem2
+
+        problem = problem4
+        problem.pieces = reorder_pieces(problem.pieces)
 
         def placing_cb(piece, location):
             self.draw_piece(piece, location)
@@ -601,8 +602,20 @@ problem3_space = Space((2,2,2))
 problem3 = Problem(problem3_pieces, problem3_space)
 
 
+problem4_pieces = (
+    Piece([(0,0,0), (0,1,0), (1,1,0), (2,1,0)]), # L
+    Piece([(0,0,0), (1,0,0), (1,1,0), (2,0,0)]), # T
+    Piece([(0,0,0), (1,0,0), (2,0,0), (1,1,0), (2,0,1)]),
+    Piece([(0,0,0), (1,0,0), (0,1,0), (0,1,1)]),
+    Piece([(0,0,0), (1,0,0), (2,0,0), (1,1,0), (1,1,1)]),
+    Piece([(0,0,0), (0,1,0), (0,1,1), (1,1,0), (1,2,0)]),
+    )
+problem4_space = Space((3,3,3))
+problem4 = Problem(problem4_pieces, problem4_space)
+
+
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == "test":
-        problem2.solve()
+        problem4.solve()
     else:
         real_problem.solve()
