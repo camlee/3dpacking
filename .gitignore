@@ -3,3 +3,9 @@
 
 __pycache__/
 *.py[cod]
+
+*.o
+*.dblite
+
+puzzle
+puzzle2
