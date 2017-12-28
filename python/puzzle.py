@@ -18,6 +18,7 @@ import time
 import os
 import sys
 import random
+import inspect
 
 
 class DoesNotFitError(Exception):
@@ -281,14 +282,15 @@ class Problem:
         self.pieces = list(pieces)
         self.space = space
 
-        self.solutions_history = []
-
-    def solve(self, out_file_name="results.txt", **kwargs):
         # Giving each piece a unique number for use when solving
         # and preparing pieces for solving by analyzing them
         for i, piece in enumerate(self.pieces):
             piece.id = i + 1
             piece.analyze()
+
+        self.solutions_history = []
+
+    def solve(self, out_file_name="results.txt", **kwargs):
 
         start_time = time.time()
 
@@ -305,7 +307,7 @@ class Problem:
 
 
 def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions_history, out_file_name, start_time,
-        minimum_pieces, parent=True, stop_at=0, timeout=None, placed_cb=None, placing_cb=None, failed_place_cb=None):
+        minimum_pieces, parent=True, stop_at=None, stop_after=None, timeout=None, placed_cb=None, placing_cb=None, failed_place_cb=None):
     """
     Brute force algorithm for placing all pieces in the space. Calls
     itself after successfully placing a piece to place all of the other
@@ -315,8 +317,10 @@ def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions
     if len(pieces) < minimum_pieces:
         minimum_pieces = len(pieces)
         print("Down to %s pieces now." % minimum_pieces)
-        if minimum_pieces < stop_at:
-            raise(StopNow())
+        if stop_at is not None and minimum_pieces <= stop_at:
+            raise StopNow("Stopping solution: only %s pieces left to place." % stop_at)
+        if stop_after is not None and len(space.placed_pieces) >= stop_after:
+            raise StopNow("Stopping solution: placed %s pieces." % stop_after)
 
         end_time = time.time()
         time_delta = (end_time - start_time)/60
@@ -350,8 +354,7 @@ def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions
     for (x, y, z) in space.points_iterator():
         # print("x, y, z: %s, %s, %s" % (x,y,z))
         if timeout and time.time() - start_time > timeout:
-            print("Timed out. Raising exception.")
-            raise(Exception("Timed out after %.1f s." % (time.time() - start_time,)))
+            raise StopNow("Stopping solution: timed out after %.1f s." % (time.time() - start_time,))
 
         if space.current_geometry[x][y][z] > 0: # Shortcut
             continue
@@ -381,7 +384,7 @@ def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions
                         placed_cb(rotated_piece, (x, y, z))
 
                     minimum_pieces = place_all_pieces_in_all_spots_and_check_if_solution(space, pieces[1:], solutions_history,
-                            out_file_name, start_time, minimum_pieces, parent=False, stop_at=stop_at, timeout=timeout,
+                            out_file_name, start_time, minimum_pieces, parent=False, stop_at=stop_at, stop_after=stop_after, timeout=timeout,
                             placed_cb=placed_cb, placing_cb=placing_cb, failed_place_cb=failed_place_cb)
 
                 else:
@@ -400,7 +403,25 @@ def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions
 
     # print("Done trying all placements of piece %s" % piece.id)
 
-class BlenderApi():
+
+class CommandClass:
+    def __new__(cls, *args, **kwargs):
+        instance = super().__new__(cls, *args, **kwargs)
+
+        cls.commands = []
+        for name in dir(cls):
+            method = getattr(cls, name)
+            if hasattr(method, "is_command") and method.is_command:
+                cls.commands.append(name)
+
+        return instance
+
+def command(method):
+    method.is_command = True
+    return method
+
+
+class BlenderApi(CommandClass):
     """
     Provides an API for running puzzle stuff from within blender
     and viewing the results. Requires bpy module, so this class
@@ -409,23 +430,49 @@ class BlenderApi():
     def __init__(self):
         self.object_id = 0
 
-        self.redraw = True # If True, the screen will be refreshed during running of the script.
-                           # The API that does this is described by Blender as unsupported so it
-                           # needs to be set to False in some cases. ex:
-                           # * To see the output of print statements
+        self.problem = real_problem
+        self.problem_name = "real_problem"
 
         import bpy
         self.bpy = bpy
 
-    def run(self, *args, **kwargs):
-        self.solve_and_draw(*args, **kwargs)
-        # self.draw_all_pieces(*args, **kwargs)
-        # self.draw_all_orientations(*args, **kwargs)
+    def run(self, command=None, *args, **kwargs):
+        if command is None:
+            print("Welcome to bpi (Blender Puzzle Interface). Here are the available commands:\n")
+            self.help()
+            print("\nFor now, running draw_all_pieces:")
+            self.draw_all_pieces()
+
+        else:
+            try:
+                method = getattr(self, command)
+            except AttributeError:
+                print("No command found by the name of %s" % command)
+                self.help()
+            else:
+                method(*args, **kwargs)
+
+    @command
+    def help(self):
+        """
+        print this help text and exit.
+        """
+        for command in sorted(self.commands):
+            method = getattr(self, command)
+            arg_spec = inspect.getfullargspec(method)
+            arg_strings = ["'%s'" % command]
+            if arg_spec.defaults:
+                for i, default in enumerate(arg_spec.defaults):
+                    key = arg_spec.args[i - len(arg_spec.defaults)]
+                    arg_strings.append("%s=%s" % (key, default))
+
+            args = ", ".join(arg_strings)
+            print("bpi.run(%s)" % args)
+            print("    %s" % method.__doc__.strip())
+            print("")
 
     def refresh_preview(self):
-        bpy = self.bpy
-        if self.redraw:
-            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        self.bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
     def _layout_pieces(self, pieces, num_rows=5, spacing=5):
         bpy = self.bpy
@@ -435,38 +482,70 @@ class BlenderApi():
             y_offset = -10 + spacing * (i % num_rows)
             self.draw_piece(piece, (x_offset, y_offset, 0))
 
+    @command
     def draw_all_pieces(self):
-        self._layout_pieces(problem4.pieces)
+        """
+        draw all of the pieces for the current puzzle, laid out in a grid
+        """
+        print("Drawing all pieces...")
+        self._layout_pieces(self.problem.pieces)
 
+    @command
     def draw_all_orientations(self, num_rows=8, piece_index=0):
-        self._layout_pieces(problem4.pieces[piece_index].orientations)
+        """
+        draw all orientations for a given piece. Optional arguments:
+            num_rows: the number of pieces to place in a single line before wrapping
+            piece_index: the index of the piece to draw the orientations for
+        """
+        print("Drawing all orientations...")
+        self._layout_pieces(self.problem.pieces[piece_index].orientations)
 
-    def solve_and_draw(self, stop_at=None, **kwargs):
+    @command
+    def draw_all_rotations(self, num_rows=8, piece_index=0):
+        """
+        draw all rotations for a given piece. Optional arguments:
+            num_rows: the number of pieces to place in a single line before wrapping
+            piece_index: the index of the piece to draw the orientations for
+        """
+        print("Drawing all orientations...")
+        self._layout_pieces(self.problem.pieces[piece_index].rotations)
+
+    @command
+    def solve(self, stop_at=None, stop_after=None, timeout=10, redraw=True):
+        """
+        solve the problem and draw the solution or partial solution. Optional arguments:
+            stop_at: Stop solving when only this many pieces are left to place
+            stop_after: Stop solving when this many pieces have been placed
+            timeout: Number of seconds to run for before stopping, no matter how many pieces have been placed.
+            redraw: Whether to refresh the render while solving or not (i.e. only at the end)
+                    The API that does this is described by Blender as unsupported so it needs to be set to False
+                    in some cases. ex:
+                    * To see the output of print statements
+        """
+        print("Solving and drawing...")
         bpy = self.bpy
-        if stop_at == None:
-            print("No stop_at provided. Ending now.")
-            return
-        kwargs["timeout"] = 120
 
-        problem = problem4
-        problem.pieces = reorder_pieces(problem.pieces)
+        self.problem.pieces = reorder_pieces(self.problem.pieces)
 
         def placing_cb(piece, location):
             self.draw_piece(piece, location)
-            self.refresh_preview()
+            if redraw:
+                self.refresh_preview()
             pass
 
         def placed_cb(piece, location):
             self.undraw_piece(piece)
             self.draw_piece(piece, location)
-            self.refresh_preview()
+            if redraw:
+                self.refresh_preview()
 
         def failed_place_cb(piece, location):
             self.undraw_piece(piece)
 
         try:
-            problem.solve(stop_at=stop_at, placing_cb=placing_cb, placed_cb=placed_cb, failed_place_cb=failed_place_cb, **kwargs)
-        except StopNow:
+            self.problem.solve(stop_at=stop_at, stop_after=stop_after, placing_cb=placing_cb, placed_cb=placed_cb, failed_place_cb=failed_place_cb, timeout=timeout)
+        except StopNow as e:
+            print(e)
             return
 
     def draw_piece(self, piece, location=None):
@@ -522,7 +601,7 @@ class BlenderApi():
                 objects_being_deleted.append(obj)
 
         if len(objects_being_deleted) > 0:
-            print("\n".join([obj.name for obj in objects_being_deleted]))
+            # print("\n".join([obj.name for obj in objects_being_deleted]))
 
             bpy.ops.object.delete()
 
