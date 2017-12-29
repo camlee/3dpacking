@@ -3,11 +3,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define VERIFY
 // #define DEBUG
 
 #ifdef DEBUG
     #include <unistd.h>
     #define SLOW_DOWN() usleep(300000)
+    #define VERIFY
+    #define VERBOSE
 #include <unistd.h>
 #else
     #define SLOW_DOWN() // Do nothing
@@ -16,10 +19,37 @@
 #define SPACE_WIDTH 3
 #define SPACE_HEIGHT 3
 #define SPACE_DEPTH 3
+// Note: rotate_piece() only works with cubes right now.
 
-#ifdef DEBUG
+
+
+/*
+
+Attempt at drawing a 3 dimensional view of the axis:
+
+      y
+     ^
+    /
+   /
+  /
+ o ---------> x
+ |
+ |
+ |
+ |
+ v
+ z
+
+*/
+
+
+#define X_AXIS 0
+#define Y_AXIS 1
+#define Z_AXIS 2
+
+#ifdef VERIFY
     #define ASSERT_WITHIN_BOUNDS(x, y, z) if ((x) >= SPACE_WIDTH || (y) >= SPACE_HEIGHT || (z) >= SPACE_DEPTH) \
-        {printf("\nx, y, or z out of bounds\n\n(File %s, Line %d, in %s().\n\nTerminating!\n\n", __FILE__, __LINE__, __func__); exit(1);}
+        {printf("\nx, y, or z out of bounds (%u, %u, %u)\n\n(File %s, Line %d, in %s().\n\nTerminating!\n\n", x, y, z, __FILE__, __LINE__, __func__); exit(1);}
 #else
     #define ASSERT_WITHIN_BOUNDS(x, y, z) // Do nothing
 #endif
@@ -33,6 +63,7 @@ typedef uint_fast32_t geom;
 // uint_fast16_t
 // uint_fast32_t
 // uint_fast64_t
+// uint128_t
 
 typedef unsigned int uint;
 
@@ -86,22 +117,80 @@ void print_piece(geom piece){
 };
 
 void print_space(geom space){
-    uint value;
-    for (uint x=0; x<SPACE_WIDTH; ++x){
-        for (uint y=0; y<SPACE_HEIGHT; ++y){
-            for (uint z=0; z<SPACE_DEPTH; ++z){
+    /*
+    Prints a flattened visual representation of what spots in the space are filled.
+    Example:
+
+    1 1 1
+    1 0 0
+    1 0 0
+
+    1 0 0
+    0 0 0
+    0 0 0
+
+    1 0 0
+    0 0 0
+    0 0 0
+
+    This is all the spots touching the axis for a 3 x 3 x 3 cube. Aka:
+    (0, 0, 0)
+    (0, 1, 0)
+    (0, 2, 0)
+    (0, 0, 1)
+    (0, 0, 2)
+    (0, 1, 0)
+    (0, 2, 0)
+
+    Annotated to show the meaning:
+
+    x = 2 ------|
+    x = 1 ----| |
+    x = 0 --| | |
+            | | |
+            v v v
+
+            1 1 1    z = 0
+    y = 0   1 0 0    z = 1
+            1 0 0    z = 2
+
+            1 0 0
+    y = 1   0 0 0
+            0 0 0
+
+            1 0 0
+    y = 2   0 0 0
+            0 0 0
+
+    */
+    for (uint y=0; y<SPACE_HEIGHT; ++y){
+        for (uint z=0; z<SPACE_DEPTH; ++z){
+            for (uint x=0; x<SPACE_WIDTH; ++x){
                 if (space & l2b(x, y, z)){
-                    value = 1;
+                    printf("1 ");
                 } else{
-                    value = 0;
+                    printf("0 ");
                 }
-                printf("%i ", value);
             }
             printf("\n");
         }
         printf("\n");
     }
 };
+
+void print_bits(geom space){
+    unsigned char *b = (unsigned char*) &space;
+    unsigned char byte;
+    int i, j;
+
+    for (i=sizeof(space)-1;i>=0;i--){
+        for (j=7;j>=0;j--){
+            byte = (b[i] >> j) & 1;
+            printf("%u", byte);
+        }
+    }
+    puts("");
+}
 
 bool piece_in_array(geom *orientations, uint orientation_count, geom piece){
     for (uint i=0; i<orientation_count; ++i){
@@ -115,39 +204,102 @@ bool piece_in_array(geom *orientations, uint orientation_count, geom piece){
 geom rotate_piece(geom piece, uint axis, uint count){
     /*
     Rotates the part count times around the specified axis.
+
     */
     geom output = 0;
+
+    int old_x;
+    int old_y;
+    int old_z;
+
+    int new_x;
+    int new_y;
+    int new_z;
 
     if (count == 0){
         return piece;
     }
 
-    if (axis == 0){ // x axis
+    if (axis == X_AXIS){
         for (uint x=0; x<SPACE_WIDTH; ++x){
             for (uint y=0; y<SPACE_HEIGHT; ++y){
                 for (uint z=0; z<SPACE_DEPTH; ++z){
                     if (piece & l2b(x, y, z)){
-                            output |= l2b(x, z, -y + SPACE_DEPTH - 1);
+
+                        new_x = (int)x;
+                        old_y = (int)y;
+                        old_z = (int)z;
+
+                        for (uint r=0; r<count; ++r){
+                            new_y = old_z;
+                            new_z = -old_y + SPACE_DEPTH - 1;
+
+                            old_y = new_y;
+                            old_z = new_z;
+                        }
+
+                        if (new_x < 0 || new_x >= SPACE_WIDTH || new_y < 0 || new_y >= SPACE_HEIGHT || new_z < 0 || new_z >= SPACE_DEPTH){
+                            printf("Failure rotating piece: goes out of bounds.\n");
+                            return piece;
+                        } else {
+                            output |= l2b((uint)new_x, (uint)new_y, (uint)new_z);
+                        }
                     }
                 }
             }
         }
-    } else if (axis == 1){ // y axis
+    } else if (axis == Y_AXIS){
         for (uint x=0; x<SPACE_WIDTH; ++x){
             for (uint y=0; y<SPACE_HEIGHT; ++y){
                 for (uint z=0; z<SPACE_DEPTH; ++z){
                     if (piece & l2b(x, y, z)){
-                        output |= l2b(z, y, x);
+
+                        old_x = (int)x;
+                        new_y = (int)y;
+                        old_z = (int)z;
+
+                        for (uint r=0; r<count; ++r){
+                            new_x = old_z;
+                            new_z = -old_x + SPACE_DEPTH - 1;
+
+                            old_x = new_x;
+                            old_z = new_z;
+                        }
+
+                        if (new_x < 0 || new_x >= SPACE_WIDTH || new_y < 0 || new_y >= SPACE_HEIGHT || new_z < 0 || new_z >= SPACE_DEPTH){
+                            printf("Failure rotating piece: goes out of bounds.\n");
+                            return piece;
+                        } else {
+                            output |= l2b((uint)new_x, (uint)new_y, (uint)new_z);
+                        }
                     }
                 }
             }
         }
-    } else if (axis == 2){ // z axis
+    } else if (axis == Z_AXIS){ // z axis
         for (uint x=0; x<SPACE_WIDTH; ++x){
             for (uint y=0; y<SPACE_HEIGHT; ++y){
                 for (uint z=0; z<SPACE_DEPTH; ++z){
                     if (piece & l2b(x, y, z)){
-                        output |= l2b(y, -x + SPACE_HEIGHT - 1, z);
+
+                        old_x = (int)x;
+                        old_y = (int)y;
+                        new_z = (int)z;
+
+                        for (uint r=0; r<count; ++r){
+                            new_x = old_y;
+                            new_y = -old_x + SPACE_WIDTH - 1;
+
+                            old_x = new_x;
+                            old_y = new_y;
+                        }
+
+                        if (new_x < 0 || new_x >= SPACE_WIDTH || new_y < 0 || new_y >= SPACE_HEIGHT || new_z < 0 || new_z >= SPACE_DEPTH){
+                            printf("Failure rotating piece: goes out of bounds.\n");
+                            return piece;
+                        } else {
+                            output |= l2b((uint)new_x, (uint)new_y, (uint)new_z);
+                        }
                     }
                 }
             }
@@ -199,14 +351,22 @@ uint populate_orientations(geom *orientations, geom piece){
                 for (int y_shift=-(SPACE_HEIGHT-1); y_shift<(SPACE_HEIGHT); ++y_shift){
                     for (int z_shift=-(SPACE_DEPTH-1); z_shift<(SPACE_DEPTH); ++z_shift){
                         // printf("z_shift=%i, y_shift=%i, x_shift=%i, rotation=%u, axis=%u:\n", z_shift, y_shift, x_shift, rotation, axis);
+
+                        // printf("\nz_shift=%i, y_shift=%i, x_shift=%i, rotation=%u, axis=%u:\n", z_shift, y_shift, x_shift, rotation, axis);
                         // printf("Making piece %u.\n", ++orientation_attempts);
+
+                        // SLOW_DOWN();
+
                         new_piece = shift_piece(rotate_piece(piece, axis, rotation), x_shift, y_shift, z_shift);
                         if (piece_in_array(orientations, orientation_count, new_piece)){
-                            // printf("Same piece. :(\n");
+                            // printf("Same piece. \n");
                             // getchar();
                             continue;
                         } else {
-                            // printf("New piece!\n");
+                            // printf("z_shift=%i, y_shift=%i, x_shift=%i, rotation=%u, axis=%u:", z_shift, y_shift, x_shift, rotation, axis);
+
+                            // printf("\nNew piece:\n");
+                            // print_space(new_piece);
                             // getchar();
                             orientations[orientation_count] = new_piece;
                             ++orientation_count;
@@ -223,52 +383,84 @@ uint populate_orientations(geom *orientations, geom piece){
     return orientation_count;
 }
 
-#define asssertGeomEqual(value1, value2, message) do { if (!((value1) == (value2))){ printf("\nfailed: %u != %u    %s", value1, value2, message); ++failures;}} while (0)
+#define assertGeomEqual(value1, value2, message) do { if (!((value1) == (value2))){ printf("\nfailed: %u != %u    %s", value1, value2, message); ++failures;}} while (0)
 #define assertFalse(value, message) do { if (value){ printf("\nfailed: %u is true    %s", value, message); ++failures;}} while (0)
 #define assertTrue(value, message) do { if (!value){ printf("\nfailed: %u is false    %s", value, message); ++failures;}} while (0)
+#define assertGeomIn(value, array, length, message) do {bool match = false; for (uint _assertGeomIn_i=0; _assertGeomIn_i<length; ++_assertGeomIn_i){if ((value) == (array[_assertGeomIn_i])){match = true; break;}}; if (!match){ printf("\nfailed: %u is not in the array    %s", value, message);}} while (0)
 
 uint test(){
     uint failures = 0;
 
-    asssertGeomEqual(l2b(0, 0, 0), 1, "");
-    asssertGeomEqual(l2b(0, 0, 1), 2, "");
+    if (SPACE_WIDTH > 0 && SPACE_HEIGHT > 0 && SPACE_DEPTH > 0){
 
-    asssertGeomEqual(l2b(0, 0, 0), 0b1, "");
-    asssertGeomEqual(l2b(0, 0, 1), 0b10, "");
+        assertGeomEqual(l2b(0, 0, 0), 1, "l2b 0");
+        assertGeomEqual(l2b(0, 0, 1), 2, "l2b one z");
 
-    asssertGeomEqual(l2b(0, 0, 0), 1 << 0, "");
-    asssertGeomEqual(l2b(0, 0, 1), 1 << 1, "");
+        assertGeomEqual(l2b(0, 0, 0), 0b1, "l2b 0 binary");
+        assertGeomEqual(l2b(0, 0, 1), 0b10, "l2b one z binary");
 
-    asssertGeomEqual(l2b(0, 1, 0), 0b1000, "");
-    asssertGeomEqual(l2b(1, 0, 0), 0b1000000000, "");
-    asssertGeomEqual(l2b(1, 1, 1), 0b10000000000000, "");
+        assertGeomEqual(l2b(0, 0, 0), 1 << 0, "l2b 0 bit shift");
+        assertGeomEqual(l2b(0, 0, 1), 1 << 1, "l2b one z bit shift");
 
-    uint array_len = 3;
-    geom array[3] = {0b001, 0b010, 0b011};
+        if (SPACE_DEPTH == 3){
+            assertGeomEqual(l2b(0, 1, 0), 0b1000, "l2b one y");
+        }
+        if (SPACE_DEPTH == 3 && SPACE_HEIGHT == 3){
+            assertGeomEqual(l2b(1, 0, 0), 0b1000000000, "l2b one x");
+            assertGeomEqual(l2b(1, 1, 1), 0b10000000000000, "l2b one x, y, and z");
+        }
 
-    assertFalse(piece_in_array(array, array_len, 0b100), "");
-    assertTrue(piece_in_array(array, array_len, 0b010), "");
+        uint array_len = 3;
+        geom array[3] = {0b001, 0b010, 0b011};
 
-    asssertGeomEqual(shift_piece(l2b(0, 0, 0), 0, 0, 0), l2b(0, 0, 0), "No shifting.");
-    asssertGeomEqual(shift_piece(l2b(0, 0, 0), 1, 0, 0), l2b(1, 0, 0), "Shift by one.");
-    asssertGeomEqual(shift_piece(l2b(0, 0, 0), 2, 0, 0), l2b(2, 0, 0), "Shift by two.");
-    asssertGeomEqual(shift_piece(l2b(2, 0, 0), -1, 0, 0), l2b(1, 0, 0), "Shift by minus one.");
-    asssertGeomEqual(shift_piece(l2b(2, 0, 0), -2, 0, 0), l2b(0, 0, 0), "Shift by minus two.");
+        assertFalse(piece_in_array(array, array_len, 0b100), "piece not in array");
+        assertTrue(piece_in_array(array, array_len, 0b010), "piece in array");
 
-    asssertGeomEqual(shift_piece(l2b(0, 0, 0), 0, 1, 0), l2b(0, 1, 0), "Shift by one y.");
-    asssertGeomEqual(shift_piece(l2b(0, 0, 0), 0, 0, 1), l2b(0, 0, 1), "Shift by one z.");
+        assertGeomEqual(shift_piece(l2b(0, 0, 0), 0, 0, 0), l2b(0, 0, 0), "No shifting.");
+        assertGeomEqual(shift_piece(l2b(0, 0, 0), 1, 0, 0), l2b(1, 0, 0), "Shift by one.");
+        assertGeomEqual(shift_piece(l2b(0, 0, 0), 2, 0, 0), l2b(2, 0, 0), "Shift by two.");
+        assertGeomEqual(shift_piece(l2b(2, 0, 0), -1, 0, 0), l2b(1, 0, 0), "Shift by minus one.");
+        assertGeomEqual(shift_piece(l2b(2, 0, 0), -2, 0, 0), l2b(0, 0, 0), "Shift by minus two.");
 
-    asssertGeomEqual(shift_piece(l2b(0, 0, 0), 1, 1, 1), l2b(1, 1, 1), "Shift by one x, y, and z.");
+        assertGeomEqual(shift_piece(l2b(0, 0, 0), 0, 1, 0), l2b(0, 1, 0), "Shift by one y.");
+        assertGeomEqual(shift_piece(l2b(0, 0, 0), 0, 0, 1), l2b(0, 0, 1), "Shift by one z.");
+
+        assertGeomEqual(shift_piece(l2b(0, 0, 0), 1, 1, 1), l2b(1, 1, 1), "Shift by one x, y, and z.");
+
+        assertGeomEqual(shift_piece(l2b(1, 0, 0) | l2b(1, 0, 1), -1, 1, 0), l2b(0, 1, 0) | l2b(0, 1, 1), "Shift multiple locations.");
+
+        assertGeomEqual(shift_piece(l2b(1, 0, 0), SPACE_WIDTH, 0, 0), l2b(1, 0, 0),
+            "Shift past edge of space in positive direction.");
+        assertGeomEqual(shift_piece(l2b(SPACE_WIDTH-1, 0, 0), 1, 1, 0), l2b(SPACE_WIDTH-1, 0, 0),
+            "Shift past edge of space in positive direction (should return same geom).");
+        assertGeomEqual(shift_piece(l2b(0, 0, 0), -1, 0, 0), l2b(0, 0, 0),
+            "Shift past edge of space in negative direction.");
+
+        if (SPACE_DEPTH == 3 && SPACE_HEIGHT == 3 && SPACE_DEPTH == 3){
+            assertGeomEqual(rotate_piece(l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 0, 1) | l2b(0, 0, 2), Y_AXIS, 1),
+                l2b(0, 0, 0) | l2b(1, 0, 2) | l2b(2, 0, 2) | l2b(0, 0, 1) | l2b(0, 0, 2), "Rotate by one y.");
+
+            assertGeomEqual(rotate_piece(l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 0, 1) | l2b(0, 0, 2), Y_AXIS, 2),
+                l2b(2, 0, 2) | l2b(1, 0, 2) | l2b(2, 0, 0) | l2b(2, 0, 1) | l2b(0, 0, 2), "Rotate by two y.");
+
+            assertGeomEqual(rotate_piece(l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 0, 1) | l2b(0, 0, 2), X_AXIS, 1),
+                l2b(0, 0, 2) | l2b(1, 0, 2) | l2b(2, 0, 2) | l2b(0, 1, 2) | l2b(0, 2, 2), "Rotate by one x.");
+
+            assertGeomEqual(rotate_piece(l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 0, 1) | l2b(0, 0, 2), X_AXIS, 2),
+                l2b(0, 2, 0) | l2b(1, 2, 2) | l2b(2, 2, 2) | l2b(0, 2, 1) | l2b(0, 2, 2), "Rotate by two x.");
 
 
-    asssertGeomEqual(shift_piece(l2b(1, 0, 0) | l2b(2, 0, 1), -1, 2, 1), l2b(0, 2, 1) | l2b(1, 2, 2), "Shift multiple locations.");
+            // Testing populate_orientations:
+            geom test_piece = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 0, 1) | l2b(0, 0, 2);
 
-    asssertGeomEqual(shift_piece(l2b(1, 0, 0), SPACE_WIDTH, 0, 0), l2b(1, 0, 0),
-        "Shift past edge of space in positive direction.");
-    asssertGeomEqual(shift_piece(l2b(SPACE_WIDTH-1, 0, 0), 1, 1, 0), l2b(SPACE_WIDTH-1, 0, 0),
-        "Shift past edge of space in positive direction (should return same geom).");
-    asssertGeomEqual(shift_piece(l2b(0, 0, 0), -1, 0, 0), l2b(0, 0, 0),
-        "Shift past edge of space in negative direction.");
+            geom test_orientations[PIECE_ORIENTATIONS_LIMIT] = {0};
+            assertTrue(populate_orientations(test_orientations, test_piece) == 24, "24 unique orientations should have been found.");
+
+            assertGeomIn(test_piece, test_orientations, PIECE_ORIENTATIONS_LIMIT, "The original piece should be included as one of the orientations.");
+            assertGeomIn(l2b(0, 0, 0) | l2b(1, 0, 2) | l2b(2, 0, 2) | l2b(0, 0, 1) | l2b(0, 0, 2), test_orientations, PIECE_ORIENTATIONS_LIMIT, "A single rotation around y should be included as one of the orientations.");
+            assertGeomIn(l2b(0, 1, 0) | l2b(1, 1, 2) | l2b(2, 1, 2) | l2b(0, 1, 1) | l2b(0, 1, 2), test_orientations, PIECE_ORIENTATIONS_LIMIT, "A single rotation around y plus a shift in positive y should be included as one of the orientations.");
+
+    }   }
 
     return failures;
 }
@@ -276,36 +468,49 @@ uint test(){
 
 int main(){
 
-    printf("\nRunning tests...");
+    printf("\nRunning tests...\n");
     uint failures = test();
     if (failures == 0){
-        printf(" passed!\n");
+        printf("passed!\n");
     } else {
         printf("\nThere were %u test failures. Exiting.\n", failures);
         return 1;
     }
 
 
-// problem4_pieces = (
-//     Piece([(0,0,0), (0,1,0), (1,1,0), (2,1,0)]), # L
-//     Piece([(0,0,0), (1,0,0), (1,1,0), (2,0,0)]), # T
-//     Piece([(0,0,0), (1,0,0), (2,0,0), (1,1,0), (2,0,1)]),
-//     Piece([(0,0,0), (1,0,0), (0,1,0), (0,1,1)]),
-//     Piece([(0,0,0), (1,0,0), (2,0,0), (1,1,0), (1,1,1)]),
-//     Piece([(0,0,0), (0,1,0), (0,1,1), (1,1,0), (1,2,0)]),
-//     )
-// problem4_space = Space((3,3,3))
-// problem4 = Problem(problem4_pieces, problem4_space)
 
     printf("\nStarting...\n");
 
-    geom piece1 = l2b(0, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
-    geom piece2 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(1, 1, 0) | l2b(2, 0, 0);
-    geom piece3 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0) | l2b(2, 0, 1);
-    geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(0, 1, 0) | l2b(0, 1, 1);
-    geom piece5 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0) | l2b(1, 1, 1);
-    geom piece6 = l2b(0, 0, 0) | l2b(0, 1, 0) | l2b(0, 1, 1) | l2b(1, 1, 0) | l2b(1, 2, 0);
+    // Problem 1:
+    // Space: 5 x 3 x 2
+    // geom piece1 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(3, 0, 0) | l2b(4, 0, 0);
+    // geom piece2 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0);
+    // geom piece3 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0);
+    // geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0);
+    // geom piece5 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0);
+    // geom piece6 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0);
 
+
+
+    // Problem 4:
+    // Space: 3 x 3 x 3
+    // geom piece1 = l2b(0, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
+    // geom piece2 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(1, 1, 0) | l2b(2, 0, 0);
+    // geom piece3 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0) | l2b(2, 0, 1);
+    // geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(0, 1, 0) | l2b(0, 1, 1);
+    // geom piece5 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0) | l2b(1, 1, 1);
+    // geom piece6 = l2b(0, 0, 0) | l2b(0, 1, 0) | l2b(0, 1, 1) | l2b(1, 1, 0) | l2b(1, 2, 0);
+
+
+
+    // Problem 5:
+    // Space: 3 x 3 x 3
+    geom piece1 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0);
+    geom piece2 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0);
+    geom piece3 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0);
+    geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(2, 1, 0);
+    geom piece5 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
+    geom piece6 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
 
 
     // geom piece1 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0);
@@ -314,6 +519,9 @@ int main(){
     // geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
     // geom piece5 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
     // geom piece6 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
+
+
+    printf("Pieces defined!\n");
 
     geom space = 0;
     geom pieces[NUM_PIECES] = {piece1, piece2, piece3, piece4, piece5, piece6};
@@ -324,8 +532,6 @@ int main(){
         orientation_counts[i] = populate_orientations(orientations[i], pieces[i]);
         printf("Found %u unique orientations for piece %u.\n", orientation_counts[i], i+1);
     }
-
-
 
 
     // geom piece1_orientations[PIECE_ORIENTATIONS_LIMIT];
@@ -351,7 +557,9 @@ int main(){
     geom space_history[NUM_PIECES] = {0};
 
     while (piece_placing < NUM_PIECES){ // Keep going until all the pieces have been placed.
-        // printf("Piece %u, orientation %u.\n", piece_placing+1, orientation_placing+1);
+        #ifdef VERBOSE
+            printf("Piece %u, orientation %u.\n", piece_placing+1, orientation_placing+1);
+        #endif
         SLOW_DOWN();
 
         if (space & orientations[piece_placing][orientation_placing]){ // Does the piece overlap another piece in the space?
@@ -359,7 +567,9 @@ int main(){
             while (++orientation_placing == orientation_counts[piece_placing]){ // Increment the orientation. But wait, is it over the limit? Keep looking until we find one that's not.
                 // No more available orientations to place this piece. We need to backup,
                 // takout a piece, and try placing it differently.
-                // printf("Can't place piece %u.\n", piece_placing + 1);
+                #ifdef VERBOSE
+                    printf("Can't place piece %u.\n", piece_placing + 1);
+                #endif
                 if (piece_placing == 0){
                     printf("\nTried all the permutations: can't place all the pieces. Therefore no solution!\n\nExiting.\n");
                     exit(1);
@@ -369,14 +579,6 @@ int main(){
                 space = space_history[piece_placing]; // Resetting the space to what is was before the previous piece was placed
                 // Fall out of the loop naturally so that the while clause is evaluated again: brings us to the next orientation
             }
-            // ++orientation_placing; // Try the next orientation
-            // if (orientation_placing == orientation_counts[piece_placing]){ // If we've already tried all the oridentations
-            //     printf("Can't place piece %u.\n", piece_placing + 1);
-            //     --piece_placing; // Trying to place the previous piece again
-            //     orientation_placing = ++orientation_history[piece_placing]; // Starting at the next orientation after the one that was used last time
-            //     space = space_history[piece_placing]; // Resetting the space to what is was before the previous piece was placed
-            //     continue; // Go!
-            // }
         } else {
             // There is no overlap: we can put this piece in this spot.
             // printf("Placed piece %u.\n", piece_placing + 1);

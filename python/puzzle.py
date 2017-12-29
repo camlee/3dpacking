@@ -440,7 +440,7 @@ class BlenderApi(CommandClass):
         if command is None:
             print("Welcome to bpi (Blender Puzzle Interface). Here are the available commands:\n")
             self.help()
-            print("\nFor now, running draw_all_pieces:")
+            print("For now, running draw_all_pieces:")
             self.draw_all_pieces()
 
         else:

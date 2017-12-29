@@ -1,5 +1,5 @@
 *results*.txt
-*.blend
+*.blend*
 
 __pycache__/
 *.py[cod]
