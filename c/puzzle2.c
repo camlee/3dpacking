@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <signal.h>
 
-#define VERIFY
+// #define VERIFY
 // #define DEBUG
+// #define VERBOSE
 
 #ifdef DEBUG
     #include <unistd.h>
@@ -16,9 +18,9 @@
     #define SLOW_DOWN() // Do nothing
 #endif
 
-#define SPACE_WIDTH 3
-#define SPACE_HEIGHT 3
-#define SPACE_DEPTH 3
+#define SPACE_WIDTH 5
+#define SPACE_HEIGHT 5
+#define SPACE_DEPTH 5
 // Note: rotate_piece() only works with cubes right now.
 
 
@@ -54,10 +56,10 @@ Attempt at drawing a 3 dimensional view of the axis:
     #define ASSERT_WITHIN_BOUNDS(x, y, z) // Do nothing
 #endif
 
-#define NUM_PIECES 6
-#define PIECE_ORIENTATIONS_LIMIT 100
+#define NUM_PIECES 25
+#define PIECE_ORIENTATIONS_LIMIT 1000
 
-typedef uint_fast32_t geom;
+typedef unsigned __int128 geom;
 // Use one of the following, as per the needed bits:
 // uint_fast8_t
 // uint_fast16_t
@@ -383,6 +385,23 @@ uint populate_orientations(geom *orientations, geom piece){
     return orientation_count;
 }
 
+volatile sig_atomic_t keep_running = 1;
+volatile sig_atomic_t print_status = 0;
+
+static void sig_handler(int signum)
+{
+    switch (signum){
+        case SIGINT:
+            print_status = 1;
+            break;
+        case SIGUSR1:
+            print_status = 1;
+            break;
+        default:
+            keep_running = 0;
+    }
+}
+
 #define assertGeomEqual(value1, value2, message) do { if (!((value1) == (value2))){ printf("\nfailed: %u != %u    %s", value1, value2, message); ++failures;}} while (0)
 #define assertFalse(value, message) do { if (value){ printf("\nfailed: %u is true    %s", value, message); ++failures;}} while (0)
 #define assertTrue(value, message) do { if (!value){ printf("\nfailed: %u is false    %s", value, message); ++failures;}} while (0)
@@ -467,6 +486,11 @@ uint test(){
 
 
 int main(){
+    struct sigaction action;
+    action.sa_handler = sig_handler;
+    sigemptyset(&action.sa_mask);
+    sigaction(SIGINT, &action, NULL);
+    sigaction(SIGUSR1, &action, NULL);
 
     printf("\nRunning tests...\n");
     uint failures = test();
@@ -505,12 +529,12 @@ int main(){
 
     // Problem 5:
     // Space: 3 x 3 x 3
-    geom piece1 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0);
-    geom piece2 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0);
-    geom piece3 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0);
-    geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(2, 1, 0);
-    geom piece5 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
-    geom piece6 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
+    // geom piece1 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0);
+    // geom piece2 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0);
+    // geom piece3 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0);
+    // geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(2, 1, 0);
+    // geom piece5 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
+    // geom piece6 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
 
 
     // geom piece1 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0);
@@ -521,18 +545,56 @@ int main(){
     // geom piece6 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(0, 1, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
 
 
+
+    // Real problem:
+    geom piece1  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(3,1,0); // color=[238, 238, 0]), # Yellow
+    geom piece2  = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(0,2,0) | l2b(1,2,0); // color=[245, 238, 0]), # Yellow "U"
+    geom piece3  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(0,1,0) | l2b(0,2,0); // color=[255, 165, 0]), # Light Orange "Symetric L"
+    geom piece4  = l2b(0,0,0) | l2b(0,0,1) | l2b(0,0,2) | l2b(0,0,3) | l2b(0,0,4); // color=[255, 180, 0]), # Light Orange "Chocolate Bar"
+    geom piece5  = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,0,1) | l2b(2,0,1); // color=[238, 154, 0]), # Dark Orange "Y-ish"
+    geom piece6  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(2,1,1); // color=[238, 145, 0]), # Dark Orange "L with hook off short end"
+    geom piece7  = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0); // color=[238, 154, 0]), # Dark Orange "L with hook off long end"
+    geom piece8  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(1,2,0); // color=[255, 0, 0]), # Red "T"
+    geom piece9  = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(2,2,0); // color=[255, 0, 20]), # Red "W"
+    geom piece10 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(2,0,1); // color=[200, 0, 0]), # Dark Red "L" with hook off corner"
+    geom piece11 = l2b(0,0,0) | l2b(0,1,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,0,1); // color=[200, 20, 0]), # Dark Red "L with hook off long end"
+    geom piece12 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(3,0,0) | l2b(3,1,0); // color=[142, 56, 142]), # Purple "L"
+    geom piece13 = l2b(0,1,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(1,0,0) | l2b(1,2,0); // color=[142, 40, 142]), # Purple "Cross"
+    geom piece14 = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,1,1); // color=[0, 0, 205]), # Blue "Two towers"
+    geom piece15 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(2,0,1); // color=[0, 20, 205]), # Blue "L with hook off middle of long end"
+    geom piece16 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,0,0) | l2b(2,1,0); // color=[0, 128, 128]), # Teal "Foam finger"
+    geom piece17 = l2b(0,0,0) | l2b(0,1,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(2,2,0); // color=[20, 128, 128]), # Teal "Z"
+    geom piece18 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,0,1) | l2b(2,0,1) | l2b(2,1,1); // color=[173, 255, 47]), # Yellow-Green "Left-handed"
+    geom piece19 = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,1,0); // color=[173, 234, 47]), # Yellow-Green "Right-handed"
+    geom piece20 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,0,1) | l2b(2,0,0); // color=[154, 255, 154]), # Light Green "Bent Cross"
+    geom piece21 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(2,0,1); // color=[170, 255, 154]), # Light Green "L with hook off side of long end"
+    geom piece22 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(3,0,0) | l2b(2,1,0); // color=[162, 205, 90]), # Olive Green "Rifle"
+    geom piece23 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,2,0) | l2b(2,1,0); // color=[150, 205, 90]), # Olive Green "Y-ish"
+    geom piece24 = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(1,1,0) | l2b(1,1,1); // color=[0, 100, 0]), # Dark Green "Base and tower"
+    geom piece25 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,0,1) | l2b(1,1,0) | l2b(2,1,0); // color=[20, 100, 0]), # Dark Green "Y-ish"
+
+
     printf("Pieces defined!\n");
 
     geom space = 0;
-    geom pieces[NUM_PIECES] = {piece1, piece2, piece3, piece4, piece5, piece6};
+    //geom pieces[NUM_PIECES] = {piece1, piece2, piece3, piece4, piece5, piece6};
+    geom pieces[NUM_PIECES] = {piece1, piece2, piece3, piece4, piece5, piece6, piece7, piece8, piece9, piece10, piece11, piece12, piece13, piece14, piece15, piece16, piece17,
+        piece18, piece19, piece20, piece21, piece22, piece23, piece24, piece25};
+
     geom orientations[NUM_PIECES][PIECE_ORIENTATIONS_LIMIT] = {{0}};
     uint orientation_counts[NUM_PIECES] = {0};
+    double total_permutations = 1;
+    long unsigned int permutations_counter = 0;
+    double tried_permutations = 0;
+
 
     for (uint i=0; i<NUM_PIECES; i++){
         orientation_counts[i] = populate_orientations(orientations[i], pieces[i]);
         printf("Found %u unique orientations for piece %u.\n", orientation_counts[i], i+1);
+        total_permutations *= orientation_counts[i];
     }
 
+    printf("Total permutations: %e\n", total_permutations);
 
     // geom piece1_orientations[PIECE_ORIENTATIONS_LIMIT];
     // uint num_piece1_orientations = populate_orientations(piece1_orientations, piece1);
@@ -558,10 +620,16 @@ int main(){
 
     while (piece_placing < NUM_PIECES){ // Keep going until all the pieces have been placed.
         #ifdef VERBOSE
-            printf("Piece %u, orientation %u.\n", piece_placing+1, orientation_placing+1);
+//            printf("Piece %u, orientation %u.\n", piece_placing+1, orientation_placing+1);
         #endif
         SLOW_DOWN();
 
+        ++permutations_counter;
+        if (permutations_counter % 1000000000 == 0){
+            tried_permutations += 1000000000;
+            printf("Tried %e permutations (%.4f %%).\n", tried_permutations, tried_permutations / total_permutations * 100.0);
+        }
+        
         if (space & orientations[piece_placing][orientation_placing]){ // Does the piece overlap another piece in the space?
             // There was overlap: can't place this piece using this orientation.
             while (++orientation_placing == orientation_counts[piece_placing]){ // Increment the orientation. But wait, is it over the limit? Keep looking until we find one that's not.
@@ -580,6 +648,9 @@ int main(){
                 // Fall out of the loop naturally so that the while clause is evaluated again: brings us to the next orientation
             }
         } else {
+            #ifdef VERBOSE
+                printf("Placed piece %u.\n", piece_placing + 1);
+            #endif
             // There is no overlap: we can put this piece in this spot.
             // printf("Placed piece %u.\n", piece_placing + 1);
             orientation_history[piece_placing] = orientation_placing; // Keeping track of what orientation was placed
@@ -593,6 +664,17 @@ int main(){
                 printf("\nPlaced all the pieces!\n");
                 break; // Break!
             }
+
+            if (!keep_running){
+                printf("\nInterupt detected. Exiting.\n");
+                printf("\nPlaced %u pieces.\n", piece_placing);
+                break;
+            }
+            if (print_status){
+                print_status = 0;
+                printf("\nPlaced %u pieces.\n", piece_placing);
+                print_space(space);
+            }
         }
     }
 
@@ -600,7 +682,7 @@ int main(){
     print_space(space);
 
     printf("Orientations:\n\n");
-    for (uint i=0; i<NUM_PIECES; ++i){
+    for (uint i=0; i<piece_placing; ++i){
         printf("Piece %u:\n", i+1);
         print_piece(orientations[i][orientation_history[i]]);
         printf("\n");
