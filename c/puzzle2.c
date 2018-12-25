@@ -21,6 +21,9 @@
 #define SPACE_WIDTH 5
 #define SPACE_HEIGHT 5
 #define SPACE_DEPTH 5
+#define SPACE_SIZE SPACE_WIDTH * SPACE_HEIGHT * SPACE_DEPTH
+
+#define COMMON_PIECE_SIZE 5
 // Note: rotate_piece() only works with cubes right now.
 
 
@@ -402,6 +405,146 @@ static void sig_handler(int signum)
     }
 }
 
+bool are_empty_spaces_factors(geom space){
+#ifdef COMMON_PIECE_SIZE
+    uint num_connected_holes;
+    geom connected_holes = 0;
+
+    uint holes_to_check_index;
+    uint holes_to_check[SPACE_SIZE][3] = {{0}};
+
+    geom part;
+
+    uint current_x;
+    uint current_y;
+    uint current_z;
+
+    uint alt_x;
+    uint alt_y;
+    uint alt_z;
+
+    space = ~space; // Because we want to find holes
+
+
+    for (uint x=0; x<SPACE_WIDTH; ++x){
+        for (uint y=0; y<SPACE_HEIGHT; ++y){
+            for (uint z=0; z<SPACE_DEPTH; ++z){
+                part = l2b(x, y, z);
+                if ((space & part) && !(connected_holes & part)){ // If it's a hole in the space and we haven't already found this hole
+                    num_connected_holes = 0;
+
+                    holes_to_check_index = 0;
+
+                    ++num_connected_holes;
+                    connected_holes |= part;
+
+                    holes_to_check[holes_to_check_index][0] = x;
+                    holes_to_check[holes_to_check_index][1] = y;
+                    holes_to_check[holes_to_check_index][2] = z;
+                    ++holes_to_check_index;
+
+                    while (holes_to_check_index > 0){
+                        
+                        --holes_to_check_index;
+                        current_x = holes_to_check[holes_to_check_index][0];
+                        current_y = holes_to_check[holes_to_check_index][1];
+                        current_z = holes_to_check[holes_to_check_index][2];
+
+                        if (current_x > 0){
+                            alt_x = current_x - 1;
+                            part = l2b(alt_x, current_y, current_z);
+                            if ((space & part) && !(connected_holes & part)){ // If it's a hole in the space and we haven't already found this hole
+                                ++num_connected_holes;
+                                connected_holes |= part;
+
+                                holes_to_check[holes_to_check_index][0] = alt_x;
+                                holes_to_check[holes_to_check_index][1] = current_y;
+                                holes_to_check[holes_to_check_index][2] = current_z;
+                                ++holes_to_check_index;
+                            }
+                        }
+                        alt_x = current_x + 1;
+                        if (alt_x < SPACE_WIDTH){
+                            part = l2b(alt_x, current_y, current_z);
+                            if ((space & part) && !(connected_holes & part)){ // If it's a hole in the space and we haven't already found this hole
+                                ++num_connected_holes;
+                                connected_holes |= part;
+
+                                holes_to_check[holes_to_check_index][0] = alt_x;
+                                holes_to_check[holes_to_check_index][1] = current_y;
+                                holes_to_check[holes_to_check_index][2] = current_z;
+                                ++holes_to_check_index;
+                            }
+                        }
+
+                        if (current_y > 0){
+                            alt_y = current_y-1;
+                            part = l2b(current_x, alt_y, current_z);
+                            if ((space & part) && !(connected_holes & part)){ // If it's a hole in the space and we haven't already found this hole
+                                ++num_connected_holes;
+                                connected_holes |= part;
+
+                                holes_to_check[holes_to_check_index][0] = current_x;
+                                holes_to_check[holes_to_check_index][1] = alt_y;
+                                holes_to_check[holes_to_check_index][2] = current_z;
+                                ++holes_to_check_index;
+                            }
+                        }
+                        alt_y = current_y + 1;
+                        if (alt_y < SPACE_HEIGHT){
+                            part = l2b(current_x, alt_y, current_z);
+                            if ((space & part) && !(connected_holes & part)){ // If it's a hole in the space and we haven't already found this hole
+                                ++num_connected_holes;
+                                connected_holes |= part;
+
+                                holes_to_check[holes_to_check_index][0] = current_x;
+                                holes_to_check[holes_to_check_index][1] = alt_y;
+                                holes_to_check[holes_to_check_index][2] = current_z;
+                                ++holes_to_check_index;
+                            }
+                        }
+
+                        if (current_z > 0){
+                            alt_z = current_z-1;
+                            part = l2b(current_x, current_y, alt_z);
+                            if ((space & part) && !(connected_holes & part)){ // If it's a hole in the space and we haven't already found this hole
+                                ++num_connected_holes;
+                                connected_holes |= part;
+
+                                holes_to_check[holes_to_check_index][0] = current_x;
+                                holes_to_check[holes_to_check_index][1] = current_y;
+                                holes_to_check[holes_to_check_index][2] = alt_z;
+                                ++holes_to_check_index;
+                            }
+                        }
+                        alt_z = current_z + 1;
+                        if (alt_z < SPACE_DEPTH){
+                            part = l2b(current_x, current_y, alt_z);
+                            if ((space & part) && !(connected_holes & part)){ // If it's a hole in the space and we haven't already found this hole
+                                ++num_connected_holes;
+                                connected_holes |= part;
+
+                                holes_to_check[holes_to_check_index][0] = current_x;
+                                holes_to_check[holes_to_check_index][1] = current_y;
+                                holes_to_check[holes_to_check_index][2] = alt_z;
+                                ++holes_to_check_index;
+                            }
+                        }
+                    }
+
+
+                    if (num_connected_holes % COMMON_PIECE_SIZE != 0){
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+#endif
+    return true;
+}
+
+
 #define assertGeomEqual(value1, value2, message) do { if (!((value1) == (value2))){ printf("\nfailed: %u != %u    %s", value1, value2, message); ++failures;}} while (0)
 #define assertFalse(value, message) do { if (value){ printf("\nfailed: %u is true    %s", value, message); ++failures;}} while (0)
 #define assertTrue(value, message) do { if (!value){ printf("\nfailed: %u is false    %s", value, message); ++failures;}} while (0)
@@ -479,7 +622,8 @@ uint test(){
             assertGeomIn(l2b(0, 0, 0) | l2b(1, 0, 2) | l2b(2, 0, 2) | l2b(0, 0, 1) | l2b(0, 0, 2), test_orientations, PIECE_ORIENTATIONS_LIMIT, "A single rotation around y should be included as one of the orientations.");
             assertGeomIn(l2b(0, 1, 0) | l2b(1, 1, 2) | l2b(2, 1, 2) | l2b(0, 1, 1) | l2b(0, 1, 2), test_orientations, PIECE_ORIENTATIONS_LIMIT, "A single rotation around y plus a shift in positive y should be included as one of the orientations.");
 
-    }   }
+        }   
+    }
 
     return failures;
 }
@@ -577,6 +721,7 @@ int main(){
     printf("Pieces defined!\n");
 
     geom space = 0;
+
     //geom pieces[NUM_PIECES] = {piece1, piece2, piece3, piece4, piece5, piece6};
     geom pieces[NUM_PIECES] = {piece1, piece2, piece3, piece4, piece5, piece6, piece7, piece8, piece9, piece10, piece11, piece12, piece13, piece14, piece15, piece16, piece17,
         piece18, piece19, piece20, piece21, piece22, piece23, piece24, piece25};
@@ -627,11 +772,13 @@ int main(){
         ++permutations_counter;
         if (permutations_counter % 1000000000 == 0){
             tried_permutations += 1000000000;
-            printf("Tried %e permutations (%.4f %%).\n", tried_permutations, tried_permutations / total_permutations * 100.0);
+            printf("Tried %e permutations (%.64f %%).\n", tried_permutations, tried_permutations / total_permutations * 100.0);
         }
         
-        if (space & orientations[piece_placing][orientation_placing]){ // Does the piece overlap another piece in the space?
-            // There was overlap: can't place this piece using this orientation.
+        if ((space & orientations[piece_placing][orientation_placing]) || !are_empty_spaces_factors(space | orientations[piece_placing][orientation_placing])){
+            // Does the piece overlap another piece in the space or does placing this piece result in an empty space that can't be filled in by pieces?
+
+            // If yes, there was overlap or an empty space that's not a factor: can't place this piece using this orientation.
             while (++orientation_placing == orientation_counts[piece_placing]){ // Increment the orientation. But wait, is it over the limit? Keep looking until we find one that's not.
                 // No more available orientations to place this piece. We need to backup,
                 // takout a piece, and try placing it differently.
