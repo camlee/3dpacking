@@ -10,10 +10,10 @@
 
 #ifdef DEBUG
     #include <unistd.h>
-    #define SLOW_DOWN() usleep(300000)
+
+    #define SLOW_DOWN() usleep(500000)
     #define VERIFY
     #define VERBOSE
-#include <unistd.h>
 #else
     #define SLOW_DOWN() // Do nothing
 #endif
@@ -394,9 +394,6 @@ volatile sig_atomic_t print_status = 0;
 static void sig_handler(int signum)
 {
     switch (signum){
-        case SIGINT:
-            print_status = 1;
-            break;
         case SIGUSR1:
             print_status = 1;
             break;
@@ -444,7 +441,7 @@ bool are_empty_spaces_factors(geom space){
                     ++holes_to_check_index;
 
                     while (holes_to_check_index > 0){
-                        
+
                         --holes_to_check_index;
                         current_x = holes_to_check[holes_to_check_index][0];
                         current_y = holes_to_check[holes_to_check_index][1];
@@ -547,7 +544,7 @@ bool are_empty_spaces_factors(geom space){
 
 #define assertGeomEqual(value1, value2, message) do { if (!((value1) == (value2))){ printf("\nfailed: %u != %u    %s", value1, value2, message); ++failures;}} while (0)
 #define assertFalse(value, message) do { if (value){ printf("\nfailed: %u is true    %s", value, message); ++failures;}} while (0)
-#define assertTrue(value, message) do { if (!value){ printf("\nfailed: %u is false    %s", value, message); ++failures;}} while (0)
+#define assertTrue(value, message) do { if (!(value)){ printf("\nfailed: %u is false    %s", value, message); ++failures;}} while (0)
 #define assertGeomIn(value, array, length, message) do {bool match = false; for (uint _assertGeomIn_i=0; _assertGeomIn_i<length; ++_assertGeomIn_i){if ((value) == (array[_assertGeomIn_i])){match = true; break;}}; if (!match){ printf("\nfailed: %u is not in the array    %s", value, message);}} while (0)
 
 uint test(){
@@ -622,7 +619,7 @@ uint test(){
             assertGeomIn(l2b(0, 0, 0) | l2b(1, 0, 2) | l2b(2, 0, 2) | l2b(0, 0, 1) | l2b(0, 0, 2), test_orientations, PIECE_ORIENTATIONS_LIMIT, "A single rotation around y should be included as one of the orientations.");
             assertGeomIn(l2b(0, 1, 0) | l2b(1, 1, 2) | l2b(2, 1, 2) | l2b(0, 1, 1) | l2b(0, 1, 2), test_orientations, PIECE_ORIENTATIONS_LIMIT, "A single rotation around y plus a shift in positive y should be included as one of the orientations.");
 
-        }   
+        }
     }
 
     return failures;
@@ -729,8 +726,8 @@ int main(){
     geom orientations[NUM_PIECES][PIECE_ORIENTATIONS_LIMIT] = {{0}};
     uint orientation_counts[NUM_PIECES] = {0};
     double total_permutations = 1;
-    long unsigned int permutations_counter = 0;
-    double tried_permutations = 0;
+    // long unsigned int permutations_counter = 0;
+    // double tried_permutations = 0;
 
 
     for (uint i=0; i<NUM_PIECES; i++){
@@ -740,6 +737,7 @@ int main(){
     }
 
     printf("Total permutations: %e\n", total_permutations);
+
 
     // geom piece1_orientations[PIECE_ORIENTATIONS_LIMIT];
     // uint num_piece1_orientations = populate_orientations(piece1_orientations, piece1);
@@ -763,23 +761,45 @@ int main(){
         // resume where we left off if necessary.
     geom space_history[NUM_PIECES] = {0};
 
+
+    // Once we've placed a piece, we'll trim down the orientations to those that still fit.
+    // Keeping track of those and the history in this data structure so we can quickly backup
+    // if we need to take out a piece:
+    static geom orientations_history[NUM_PIECES][NUM_PIECES][PIECE_ORIENTATIONS_LIMIT] = {{{0}}};
+    uint orientation_counts_history[NUM_PIECES][NUM_PIECES] = {{0}};
+
+    // Populating the initial history record (for piece_placing=0):
+    for (uint i=0; i<NUM_PIECES; ++i){
+        orientation_counts_history[piece_placing][i] = orientation_counts[i];
+        for (uint j=0; j<orientation_counts[i]; ++j){
+            orientations_history[piece_placing][i][j] = orientations[i][j];
+        }
+    }
+
+    bool some_piece_does_not_fit_anymore = false;
+
+
     while (piece_placing < NUM_PIECES){ // Keep going until all the pieces have been placed.
         #ifdef VERBOSE
 //            printf("Piece %u, orientation %u.\n", piece_placing+1, orientation_placing+1);
         #endif
         SLOW_DOWN();
 
-        ++permutations_counter;
-        if (permutations_counter % 1000000000 == 0){
-            tried_permutations += 1000000000;
-            printf("Tried %e permutations (%.64f %%).\n", tried_permutations, tried_permutations / total_permutations * 100.0);
-        }
-        
-        if ((space & orientations[piece_placing][orientation_placing]) || !are_empty_spaces_factors(space | orientations[piece_placing][orientation_placing])){
+        // ++permutations_counter;
+        // if (permutations_counter % 1000000 == 0){
+        //     tried_permutations += 1000000;
+        //     printf("Tried %e permutations (%.64f %%).\n", tried_permutations, tried_permutations / total_permutations * 100.0);
+        // }
+
+        if (some_piece_does_not_fit_anymore
+            || (space & orientations_history[piece_placing][piece_placing][orientation_placing])
+            || !are_empty_spaces_factors(space | orientations_history[piece_placing][piece_placing][orientation_placing])
+            ){
             // Does the piece overlap another piece in the space or does placing this piece result in an empty space that can't be filled in by pieces?
 
+            some_piece_does_not_fit_anymore = false;
             // If yes, there was overlap or an empty space that's not a factor: can't place this piece using this orientation.
-            while (++orientation_placing == orientation_counts[piece_placing]){ // Increment the orientation. But wait, is it over the limit? Keep looking until we find one that's not.
+            while (++orientation_placing >= orientation_counts_history[piece_placing][piece_placing]){ // Increment the orientation. But wait, is it over the limit? Keep looking until we find one that's not.
                 // No more available orientations to place this piece. We need to backup,
                 // takout a piece, and try placing it differently.
                 #ifdef VERBOSE
@@ -798,11 +818,15 @@ int main(){
             #ifdef VERBOSE
                 printf("Placed piece %u.\n", piece_placing + 1);
             #endif
+            if (!orientations_history[piece_placing][piece_placing][orientation_placing]){
+                printf("\nWe're trying to place an empty piece (piece %u, orientation %u!!! :(. Something went wrong.\n\nExiting.\n", piece_placing, orientation_placing);
+                exit(1);
+            }
             // There is no overlap: we can put this piece in this spot.
             // printf("Placed piece %u.\n", piece_placing + 1);
             orientation_history[piece_placing] = orientation_placing; // Keeping track of what orientation was placed
             space_history[piece_placing] = space; // Keeping track of what the space looked like before we place the piece
-            space |= orientations[piece_placing][orientation_placing]; // Putting the piece in the space.
+            space |= orientations_history[piece_placing][piece_placing][orientation_placing]; // Putting the piece in the space.
             ++piece_placing; // Moving on to the next piece
             orientation_placing = 0; // Starting with the first orientation for the next piece.
 
@@ -822,6 +846,24 @@ int main(){
                 printf("\nPlaced %u pieces.\n", piece_placing);
                 print_space(space);
             }
+
+            // Trimming down what remaining pieces and orientations we have:
+            for (uint remaining_piece=piece_placing; remaining_piece<NUM_PIECES; ++remaining_piece){
+                uint orientation_count = 0;
+                for (uint remaining_orientation=0; remaining_orientation<orientation_counts_history[piece_placing-1][remaining_piece]; ++remaining_orientation){
+                    if (!(space & orientations_history[piece_placing-1][remaining_piece][remaining_orientation])){
+                        // If this piece still fits in the space in this orientation:
+                        orientations_history[piece_placing][remaining_piece][orientation_count] = orientations_history[piece_placing-1][remaining_piece][remaining_orientation];
+                        ++orientation_count;
+                    }
+                }
+                orientation_counts_history[piece_placing][remaining_piece] = orientation_count;
+                if (orientation_count == 0){
+                    some_piece_does_not_fit_anymore = true;
+                    // printf("Piece %u does not fit anymore.\n", remaining_piece+1);
+                }
+                // printf("Down to %u orientations for piece %u.\n", orientation_count, remaining_piece+1);
+            }
         }
     }
 
@@ -831,7 +873,7 @@ int main(){
     printf("Orientations:\n\n");
     for (uint i=0; i<piece_placing; ++i){
         printf("Piece %u:\n", i+1);
-        print_piece(orientations[i][orientation_history[i]]);
+        print_piece(orientations_history[i][i][orientation_history[i]]);
         printf("\n");
     }
 
