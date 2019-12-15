@@ -349,7 +349,7 @@ def place_all_pieces_in_all_spots_and_check_if_solution(space, pieces, solutions
         pass
 
     piece = pieces[0]
-    # print("Placing piece %s" % piece.id)
+    print("Placing piece %s" % piece.id)
 
     for (x, y, z) in space.points_iterator():
         # print("x, y, z: %s, %s, %s" % (x,y,z))
@@ -692,9 +692,21 @@ problem4_pieces = (
 problem4_space = Space((3,3,3))
 problem4 = Problem(problem4_pieces, problem4_space)
 
+code_challenge_pieces = (
+    Piece([(0, 0, 0), (1, 0, 0), (2, 0, 0), (0, 1, 0)]),
+    Piece([(0, 0, 0), (1, 0, 0), (2, 0, 0), (0, 1, 0), (1, 0, 1)]),
+    Piece([(0, 0, 0), (1, 0, 0), (2, 0, 0), (1, 0, 1)]),
+    Piece([(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 0, 1), (2, 0, 1)]),
+    Piece([(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)]),
+    Piece([(0, 0, 0), (1, 0, 0), (2, 0, 0), (1, 0, 1), (1, 1, 1)]),
+    )
+code_challenge_space = Space((3,3,3))
+code_challenge = Problem(code_challenge_pieces, code_challenge_space)
+
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        problem4.solve()
+    if len(sys.argv) > 1:
+        problem_name = sys.argv[1]
+        globals()[problem_name].solve()
     else:
         real_problem.solve()
