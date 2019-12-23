@@ -12,26 +12,27 @@
 #ifdef DEBUG
     #include <unistd.h>
 
-    #define SLOW_DOWN() usleep(100000)
+    #define SLOW_DOWN() usleep(500000)
     #define VERIFY
-    #define VERBOSE
+    // #define VERBOSE
 #else
     #define SLOW_DOWN() // Do nothing
 #endif
 
 #define RESET   "\x1b[0m"
 
-#define SPACE_WIDTH 3
-#define SPACE_HEIGHT 3
-#define SPACE_DEPTH 3
+#define SPACE_WIDTH 5
+#define SPACE_HEIGHT 5
+#define SPACE_DEPTH 5
 #define SPACE_SIZE SPACE_WIDTH * SPACE_HEIGHT * SPACE_DEPTH
 
-// #define COMMON_PIECE_SIZE 5
+#define COMMON_PIECE_SIZE 5
 // Note: rotate_piece() only works with cubes right now.
 #define SPACE_WILL_BE_FULL
 
-// #define STOP_AT_FIRST_SOLUTION
-#define TRACK_PROGRESS
+#define STOP_AT_FIRST_SOLUTION
+// #define TRACK_PROGRESS
+// #define DEBUG_SOLUTION
 
 
 
@@ -75,6 +76,7 @@ typedef unsigned __int128 geom;
 // uint_fast32_t
 // uint_fast64_t
 // uint128_t
+// unsigned __int128
 
 typedef unsigned int uint;
 
@@ -750,25 +752,37 @@ int main(){
 
     // Coding Challenge:
     // Space: 3 x 3 x 3
-    #define NUM_PIECES 7
-    geom piece1 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(1, 1, 0);
-    geom piece2 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(2, 1, 0);
-    geom piece3 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0);
-    geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
-    geom piece5 = l2b(0, 0, 1) | l2b(1, 0, 1) | l2b(1, 1, 1) | l2b(1, 0, 0);
-    geom piece6 = l2b(0, 0, 1) | l2b(1, 0, 1) | l2b(0, 1, 1) | l2b(1, 0, 0);
-    geom piece7 = l2b(0, 0, 1) | l2b(1, 0, 1) | l2b(1, 0, 0) | l2b(1, 1, 0);
+    // #define NUM_PIECES 7
+    // geom piece1 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(1, 1, 0);
+    // geom piece2 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(2, 1, 0);
+    // geom piece3 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(2, 0, 0) | l2b(1, 1, 0);
+    // geom piece4 = l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(1, 1, 0) | l2b(2, 1, 0);
+    // geom piece5 = l2b(0, 0, 1) | l2b(1, 0, 1) | l2b(1, 1, 1) | l2b(1, 0, 0);
+    // geom piece6 = l2b(0, 0, 1) | l2b(1, 0, 1) | l2b(0, 1, 1) | l2b(1, 0, 0);
+    // geom piece7 = l2b(0, 0, 1) | l2b(1, 0, 1) | l2b(1, 0, 0) | l2b(1, 1, 0);
 
-    geom pieces[NUM_PIECES] = {piece1, piece2, piece3, piece4, piece5, piece6, piece7};
-    char *piece_colors[NUM_PIECES] = {
-        "\e[38;2;255;0;0m",     // Red
-        "\e[38;2;0;128;128m",   // Teal
-        "\e[38;2;0;100;0m",     // Dark Green
-        "\e[38;2;154;255;154m", // Light Green
-        "\e[38;2;255;180;0m",   // Light Orange
-        "\e[38;2;0;20;205m",    // Blue
-        "\e[38;2;170;255;154m", // Light Green
-    };
+    // geom pieces[NUM_PIECES] = {piece1, piece2, piece3, piece4, piece5, piece6, piece7};
+    // char *piece_colors[NUM_PIECES] = {
+    //     "\e[38;2;255;0;0m",     // Red
+    //     "\e[38;2;0;128;128m",   // Teal
+    //     "\e[38;2;0;100;0m",     // Dark Green
+    //     "\e[38;2;154;255;154m", // Light Green
+    //     "\e[38;2;255;180;0m",   // Light Orange
+    //     "\e[38;2;0;20;205m",    // Blue
+    //     "\e[38;2;170;255;154m", // Light Green
+    // };
+
+    // #ifdef DEBUG_SOLUTION
+    // geom solution[NUM_PIECES] = {
+    //     l2b(0, 0, 0) | l2b(1, 0, 0) | l2b(1, 1, 0),
+    //     l2b(0, 2, 2) | l2b(1, 2, 2) | l2b(2, 1, 2) | l2b(2, 2, 2),
+    //     l2b(2, 0, 0) | l2b(2, 0, 1) | l2b(2, 0, 2) | l2b(2, 1, 1),
+    //     l2b(0, 0, 1) | l2b(0, 0, 2) | l2b(0, 1, 0) | l2b(0, 1, 1),
+    //     l2b(1, 2, 0) | l2b(2, 1, 0) | l2b(2, 2, 0) | l2b(2, 2, 1),
+    //     l2b(0, 2, 0) | l2b(0, 2, 1) | l2b(1, 1, 1) | l2b(1, 2, 1),
+    //     l2b(0, 1, 2) | l2b(1, 0, 1) | l2b(1, 0, 2) | l2b(1, 1, 2),
+    // };
+    // #endif
 
     // Small physical wooden puzzle:
     // Space: 3 x 3 x 3
@@ -786,93 +800,94 @@ int main(){
 
     // Real problem:
     // Space: 5 x 5 x 5
-    // #define NUM_PIECES 25
-    // geom piece1  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(3,1,0); // color=[238, 238, 0]), # Yellow
-    // geom piece2  = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(0,2,0) | l2b(1,2,0); // color=[245, 238, 0]), # Yellow "U"
-    // geom piece3  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(0,1,0) | l2b(0,2,0); // color=[255, 165, 0]), # Light Orange "Symetric L"
-    // geom piece4  = l2b(0,0,0) | l2b(0,0,1) | l2b(0,0,2) | l2b(0,0,3) | l2b(0,0,4); // color=[255, 180, 0]), # Light Orange "Chocolate Bar"
-    // geom piece5  = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,0,1) | l2b(2,0,1); // color=[238, 154, 0]), # Dark Orange "Y-ish"
-    // geom piece6  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(2,1,1); // color=[238, 145, 0]), # Dark Orange "L with hook off short end"
-    // geom piece7  = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0); // color=[238, 154, 0]), # Dark Orange "L with hook off long end"
-    // geom piece8  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(1,2,0); // color=[255, 0, 0]), # Red "T"
-    // geom piece9  = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(2,2,0); // color=[255, 0, 20]), # Red "W"
-    // geom piece10 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(2,0,1); // color=[200, 0, 0]), # Dark Red "L" with hook off corner"
-    // geom piece11 = l2b(0,0,0) | l2b(0,1,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,0,1); // color=[200, 20, 0]), # Dark Red "L with hook off long end"
-    // geom piece12 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(3,0,0) | l2b(3,1,0); // color=[142, 56, 142]), # Purple "L"
-    // geom piece13 = l2b(0,1,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(1,0,0) | l2b(1,2,0); // color=[142, 40, 142]), # Purple "Cross"
-    // geom piece14 = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,1,1); // color=[0, 0, 205]), # Blue "Two towers"
-    // geom piece15 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(2,0,1); // color=[0, 20, 205]), # Blue "L with hook off middle of long end"
-    // geom piece16 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,0,0) | l2b(2,1,0); // color=[0, 128, 128]), # Teal "Foam finger"
-    // geom piece17 = l2b(0,0,0) | l2b(0,1,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(2,2,0); // color=[20, 128, 128]), # Teal "Z"
-    // geom piece18 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,0,1) | l2b(2,0,1) | l2b(2,1,1); // color=[173, 255, 47]), # Yellow-Green "Left-handed"
-    // geom piece19 = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,1,0); // color=[173, 234, 47]), # Yellow-Green "Right-handed"
-    // geom piece20 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,0,1) | l2b(2,0,0); // color=[154, 255, 154]), # Light Green "Bent Cross"
-    // geom piece21 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(2,0,1); // color=[170, 255, 154]), # Light Green "L with hook off side of long end"
-    // geom piece22 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(3,0,0) | l2b(2,1,0); // color=[162, 205, 90]), # Olive Green "Rifle"
-    // geom piece23 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,2,0) | l2b(2,1,0); // color=[150, 205, 90]), # Olive Green "Y-ish"
-    // geom piece24 = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(1,1,0) | l2b(1,1,1); // color=[0, 100, 0]), # Dark Green "Base and tower"
-    // geom piece25 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,0,1) | l2b(1,1,0) | l2b(2,1,0); // color=[20, 100, 0]), # Dark Green "Y-ish"
+    #define NUM_PIECES 25
+    geom piece1  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(3,1,0); // color=[238, 238, 0]), # Yellow
+    geom piece2  = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(0,2,0) | l2b(1,2,0); // color=[245, 238, 0]), # Yellow "U"
+    geom piece3  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(0,1,0) | l2b(0,2,0); // color=[255, 165, 0]), # Light Orange "Symetric L"
+    geom piece4  = l2b(0,0,0) | l2b(0,0,1) | l2b(0,0,2) | l2b(0,0,3) | l2b(0,0,4); // color=[255, 180, 0]), # Light Orange "Chocolate Bar"
+    geom piece5  = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,0,1) | l2b(2,0,1); // color=[238, 154, 0]), # Dark Orange "Y-ish"
+    geom piece6  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(2,1,1); // color=[238, 145, 0]), # Dark Orange "L with hook off short end"
+    geom piece7  = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0); // color=[238, 154, 0]), # Dark Orange "L with hook off long end"
+    geom piece8  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(1,2,0); // color=[255, 0, 0]), # Red "T"
+    geom piece9  = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(2,2,0); // color=[255, 0, 20]), # Red "W"
+    geom piece10 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(2,0,1); // color=[200, 0, 0]), # Dark Red "L" with hook off corner"
+    geom piece11 = l2b(0,0,0) | l2b(0,1,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,0,1); // color=[200, 20, 0]), # Dark Red "L with hook off long end"
+    geom piece12 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(3,0,0) | l2b(3,1,0); // color=[142, 56, 142]), # Purple "L"
+    geom piece13 = l2b(0,1,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(1,0,0) | l2b(1,2,0); // color=[142, 40, 142]), # Purple "Cross"
+    geom piece14 = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,1,1); // color=[0, 0, 205]), # Blue "Two towers"
+    geom piece15 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(2,0,1); // color=[0, 20, 205]), # Blue "L with hook off middle of long end"
+    geom piece16 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,0,0) | l2b(2,1,0); // color=[0, 128, 128]), # Teal "Foam finger"
+    geom piece17 = l2b(0,0,0) | l2b(0,1,0) | l2b(1,1,0) | l2b(2,1,0) | l2b(2,2,0); // color=[20, 128, 128]), # Teal "Z"
+    geom piece18 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,0,1) | l2b(2,0,1) | l2b(2,1,1); // color=[173, 255, 47]), # Yellow-Green "Left-handed"
+    geom piece19 = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,1,0); // color=[173, 234, 47]), # Yellow-Green "Right-handed"
+    geom piece20 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,0,1) | l2b(2,0,0); // color=[154, 255, 154]), # Light Green "Bent Cross"
+    geom piece21 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(2,0,1); // color=[170, 255, 154]), # Light Green "L with hook off side of long end"
+    geom piece22 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(3,0,0) | l2b(2,1,0); // color=[162, 205, 90]), # Olive Green "Rifle"
+    geom piece23 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,2,0) | l2b(2,1,0); // color=[150, 205, 90]), # Olive Green "Y-ish"
+    geom piece24 = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(1,1,0) | l2b(1,1,1); // color=[0, 100, 0]), # Dark Green "Base and tower"
+    geom piece25 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,0,1) | l2b(1,1,0) | l2b(2,1,0); // color=[20, 100, 0]), # Dark Green "Y-ish"
 
-    // geom pieces[NUM_PIECES] = {
-    //     piece8,
-    //     piece1,
-    //     piece22,
-    //     piece6,
-    //     piece24,
-    //     piece2,
-    //     piece19,
-    //     piece11,
-    //     piece3,
-    //     piece20,
-    //     piece16,
-    //     piece4,
-    //     piece15,
-    //     piece23,
-    //     piece17,
-    //     piece5,
-    //     piece13,
-    //     piece21,
-    //     piece7,
-    //     piece9,
-    //     piece18,
-    //     piece10,
-    //     piece12,
-    //     piece14,
-    //     piece25
-    // };
+    geom pieces[NUM_PIECES] = {
+        piece4,
+        piece8,
+        piece1,
+        piece22,
+        piece6,
+        piece24,
+        piece2,
+        piece19,
+        piece11,
+        piece3,
+        piece20,
+        piece16,
+        piece15,
+        piece23,
+        piece17,
+        piece5,
+        piece13,
+        piece21,
+        piece7,
+        piece9,
+        piece18,
+        piece10,
+        piece12,
+        piece14,
+        piece25
+    };
 
-    // //
-    // char *piece_colors[NUM_PIECES] = {
-    //     "\e[38;2;255;0;0m",     // piece8: Red "T"
-    //     "\e[38;2;238;238;0m",   // piece1: Yellow
-    //     "\e[38;2;162;205;90m",  // piece22: Olive Green "Rifle"
-    //     "\e[38;2;238;145;0m",   // piece6: Dark Orange "L with hook off short end"
-    //     "\e[38;2;0;100;0m",     // piece24: Dark Green "Base and tower"
-    //     "\e[38;2;245;238;0m",   // piece2: Yellow "U"
-    //     "\e[38;2;173;234;47m",  // piece19: Yellow-Green "Right-handed"
-    //     "\e[38;2;200;20;0m",    // piece11: Dark Red "L with hook off long end"
-    //     "\e[38;2;255;165;0m",   // piece3: Light Orange "Symetric L"
-    //     "\e[38;2;154;255;154m", // piece20: Light Green "Bent Cross"
-    //     "\e[38;2;0;128;128m",   // piece16: Teal "Foam finger"
-    //     "\e[38;2;255;180;0m",   // piece4: Light Orange "Chocolate Bar"
-    //     "\e[38;2;0;20;205m",    // piece15: Blue "L with hook off middle of long end"
-    //     "\e[38;2;150;205;90m",  // piece23: Olive Green "Y-ish"
-    //     "\e[38;2;20;128;128m",  // piece17: Teal "Z"
-    //     "\e[38;2;238;154;0m",   // piece5: Dark Orange "Y-ish"
-    //     "\e[38;2;142;40;142m",  // piece13: Purple "Cross"
-    //     "\e[38;2;170;255;154m", // piece21: Light Green "L with hook off side of long end"
-    //     "\e[38;2;238;154;0m",   // piece7: Dark Orange "L with hook off long end"
-    //     "\e[38;2;255;0;20m",    // piece9: Red "W"
-    //     "\e[38;2;173;255;47m",  // piece18: Yellow-Green "Left-handed"
-    //     "\e[38;2;200;0;0m",     // piece10: Dark Red "L" with hook off corner"
-    //     "\e[38;2;142;56;142m",  // piece12: Purple "L"
-    //     "\e[38;2;0;0;205m",     // piece14: Blue "Two towers"
-    //     "\e[38;2;20;100;0m"     // piece25: Dark Green "Y-ish"
-    // };
+    //
+    char *piece_colors[NUM_PIECES] = {
+        "\e[38;2;255;180;0m",   // piece4: Light Orange "Chocolate Bar"
+        "\e[38;2;255;0;0m",     // piece8: Red "T"
+        "\e[38;2;238;238;0m",   // piece1: Yellow
+        "\e[38;2;162;205;90m",  // piece22: Olive Green "Rifle"
+        "\e[38;2;238;145;0m",   // piece6: Dark Orange "L with hook off short end"
+        "\e[38;2;0;100;0m",     // piece24: Dark Green "Base and tower"
+        "\e[38;2;245;238;0m",   // piece2: Yellow "U"
+        "\e[38;2;173;234;47m",  // piece19: Yellow-Green "Right-handed"
+        "\e[38;2;200;20;0m",    // piece11: Dark Red "L with hook off long end"
+        "\e[38;2;255;165;0m",   // piece3: Light Orange "Symetric L"
+        "\e[38;2;154;255;154m", // piece20: Light Green "Bent Cross"
+        "\e[38;2;0;128;128m",   // piece16: Teal "Foam finger"
+        "\e[38;2;0;20;205m",    // piece15: Blue "L with hook off middle of long end"
+        "\e[38;2;150;205;90m",  // piece23: Olive Green "Y-ish"
+        "\e[38;2;20;128;128m",  // piece17: Teal "Z"
+        "\e[38;2;238;154;0m",   // piece5: Dark Orange "Y-ish"
+        "\e[38;2;142;40;142m",  // piece13: Purple "Cross"
+        "\e[38;2;170;255;154m", // piece21: Light Green "L with hook off side of long end"
+        "\e[38;2;238;154;0m",   // piece7: Dark Orange "L with hook off long end"
+        "\e[38;2;255;0;20m",    // piece9: Red "W"
+        "\e[38;2;173;255;47m",  // piece18: Yellow-Green "Left-handed"
+        "\e[38;2;200;0;0m",     // piece10: Dark Red "L" with hook off corner"
+        "\e[38;2;142;56;142m",  // piece12: Purple "L"
+        "\e[38;2;0;0;205m",     // piece14: Blue "Two towers"
+        "\e[38;2;20;100;0m"     // piece25: Dark Green "Y-ish"
+    };
 
     void print_colored_pieces_in_space(
         geom orientations_history[NUM_PIECES][NUM_PIECES][PIECE_ORIENTATIONS_LIMIT],
         uint orientation_history[NUM_PIECES],
+        uint piece_placing_history[NUM_PIECES],
         uint to_piece){
 
         for (uint z=0; z<SPACE_DEPTH; ++z){
@@ -889,22 +904,27 @@ int main(){
             for (uint y=0; y<SPACE_HEIGHT; ++y){
                 printf(" │");
                 for (uint x=0; x<SPACE_WIDTH; ++x){
+                    bool found_match = false;
                     uint matching_piece = 0;
 
                     for (uint i=0; i<to_piece; ++i){
-                        if (orientations_history[i][i][orientation_history[i]] & l2b(x, y, z)){
-                            matching_piece = i+1;
+                        uint piece_index = piece_placing_history[i];
+                        if (orientations_history[i][piece_index][orientation_history[i]] & l2b(x, y, z)){
+                            matching_piece = i;
+                            found_match = true;
                             break;
                         }
                     }
-                    if (matching_piece){
-                        printf(piece_colors[matching_piece-1]);
-                        printf(" ■ ");
+                    if (found_match){
+                        printf(piece_colors[piece_placing_history[matching_piece]]);
+                        #if NUM_PIECES > 10
+                        printf(" ■ "); // Not printing the piece number when it could be more than 1 digit
+                        #else
+                        printf(" %u ", piece_placing_history[matching_piece]+1);
+                        #endif
                         printf(RESET);
                     } else{
-                        // printf("\e[48;2;10;10;10m");
                         printf("   ");
-                        // printf(RESET);
                     }
                 }
                 printf("│ ");
@@ -940,11 +960,14 @@ int main(){
     geom orientations[NUM_PIECES][PIECE_ORIENTATIONS_LIMIT] = {{0}};
     uint orientation_counts[NUM_PIECES] = {0};
     double total_permutations = 1;
+    #ifdef TRACK_PROGRESS
     double permutations_tried = 0;
+    #endif
     long unsigned int loop_counter = 0;
     long unsigned int previous_loop_counter = 0;
 
     clock_t start = clock();
+    clock_t previous = start;
     clock_t end;
     double duration;
 
@@ -972,9 +995,12 @@ int main(){
     uint solution_count = 0;
     #endif
 
-    uint piece_placing = 0; // The index of the piece we're currently trying to place.
-        // Also equal to the number of pieces placed.
+    uint piece_history_index = 0; // The number of the piece we're placing (1, 2, 3, ...)
+    uint piece_placing_index = 0; // The index of the piece we're currently trying to place.
+        // Not necessarily equal to piece_history_index
+    #ifndef VERBOSE
     uint maximum_piece_placing = 0;
+    #endif
     uint orientation_placing = 0; // The index of the orientation we're trying for the
         // piece we're trying to place.
 
@@ -990,68 +1016,74 @@ int main(){
     static geom orientations_history[NUM_PIECES][NUM_PIECES][PIECE_ORIENTATIONS_LIMIT] = {{{0}}};
     uint orientation_counts_history[NUM_PIECES][NUM_PIECES] = {{0}};
 
+    // We're going to pick the next piece to place based on what we think is fastest.
+    // So it won't necessarily be in order (1, 2, 3, ...). We need to keep track of what
+    // piece we were placing last
+    uint piece_placing_history[NUM_PIECES] = {0};
+
     #ifdef TRACK_PROGRESS
     double permutations_history[NUM_PIECES] = {total_permutations};
 
     long unsigned int backout_no_orientations_left_for_a_piece = 0;
     long unsigned int backout_some_part_of_space_cannot_be_filled = 0;
+    #ifdef COMMON_PIECE_SIZE
     long unsigned int backout_are_empty_spaces_factors = 0;
     #endif
+    #endif
 
-    // Populating the initial history record (for piece_placing=0):
+    // Populating the initial history record (for piece_placing_index):
     for (uint i=0; i<NUM_PIECES; ++i){
-        orientation_counts_history[piece_placing][i] = orientation_counts[i];
+        orientation_counts_history[0][i] = orientation_counts[i];
         for (uint j=0; j<orientation_counts[i]; ++j){
-            orientations_history[piece_placing][i][j] = orientations[i][j];
+            orientations_history[0][i][j] = orientations[i][j];
         }
     }
 
     bool backout = false;
 
     end = clock();
-    duration = ((double) (end - start)) / CLOCKS_PER_SEC;
-    start = end;
+    duration = ((double) (end - previous)) / CLOCKS_PER_SEC;
+    previous = end;
     printf("Setup in %.1f seconds.\n", duration);
 
-    // while (piece_placing < NUM_PIECES){ // Keep going until all the pieces have been placed.
     while (keep_running) {
 
         // First, some checks we want to do each loop:
         #ifdef VERBOSE
-//            printf("Piece %u, orientation %u.\n", piece_placing+1, orientation_placing+1);
+//           printf("Piece %u, orientation %u.\n", piece_placing+1, orientation_placing+1);
         #endif
         SLOW_DOWN();
 
         if (!keep_running){
             printf("\nInterupt detected. Exiting.\n");
-            printf("\nPlaced %u pieces.\n", piece_placing);
+            printf("\nPlaced %u pieces.\n", piece_history_index+1);
             break;
         }
         if (print_status){
             print_status = 0;
-            printf("\nPlaced %u pieces.\n", piece_placing);
+            printf("\nPlaced %u pieces.\n", piece_history_index+1);
             // print_space(space);
             // printf("Space by piece number:\n");
-            print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing);
+            print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing_history, piece_history_index);
         }
 
         ++loop_counter;
         if (loop_counter % 1000000 == 0){
             end = clock();
-            duration = ((double) (end - start)) / CLOCKS_PER_SEC;
-            start = end;
+            duration = ((double) (end - previous)) / CLOCKS_PER_SEC;
+            previous = end;
             #ifdef TRACK_PROGRESS
-            printf("Tried %e permutations of %e (%.5f %%) in %.1f seconds at a rate of %.1f million loops/second.\n",
+            printf("Tried %e permutations of %e (%.5f %%) in %.1f seconds at a rate of %.2f million loops/second.\n",
                 permutations_tried, total_permutations, permutations_tried / total_permutations * 100.0, duration,
                 ((double)(loop_counter-previous_loop_counter))/duration/1000000.0);
-            printf("  %.1f % backout_no_orientations_left_for_a_piece\n",
-                100.0 * (double)backout_no_orientations_left_for_a_piece / (double)(backout_no_orientations_left_for_a_piece + backout_are_empty_spaces_factors + backout_some_part_of_space_cannot_be_filled));
-            printf("  %.1f % backout_some_part_of_space_cannot_be_filled\n",
-                100.0 * (double)backout_some_part_of_space_cannot_be_filled / (double)(backout_no_orientations_left_for_a_piece + backout_are_empty_spaces_factors + backout_some_part_of_space_cannot_be_filled));
-            printf("  %.1f % backout_are_empty_spaces_factors\n",
-                100.0 * (double)backout_are_empty_spaces_factors / (double)(backout_no_orientations_left_for_a_piece + backout_are_empty_spaces_factors + backout_some_part_of_space_cannot_be_filled));
+            // printf("  %.1f % backout_no_orientations_left_for_a_piece\n",
+            //     100.0 * (double)backout_no_orientations_left_for_a_piece / (double)(backout_no_orientations_left_for_a_piece + backout_are_empty_spaces_factors + backout_some_part_of_space_cannot_be_filled));
+            // printf("  %.1f % backout_some_part_of_space_cannot_be_filled\n",
+            //     100.0 * (double)backout_some_part_of_space_cannot_be_filled / (double)(backout_no_orientations_left_for_a_piece + backout_are_empty_spaces_factors + backout_some_part_of_space_cannot_be_filled));
+            // printf("  %.1f % backout_are_empty_spaces_factors\n",
+            //     100.0 * (double)backout_are_empty_spaces_factors / (double)(backout_no_orientations_left_for_a_piece + backout_are_empty_spaces_factors + backout_some_part_of_space_cannot_be_filled));
             #else
-            printf("%.1f seconds at a rate of %.1f million loops/second.\n", duration,
+            printf("%.1f seconds at a rate of %.2f million loops/second.\n", duration,
                 ((double)(loop_counter-previous_loop_counter))/duration/1000000.0);
             #endif
             previous_loop_counter = loop_counter;
@@ -1065,59 +1097,89 @@ int main(){
             // But wait, have we run out of orientations? If yes, back up to the previous piece.
             // Doing this in a while loop as that piece might also have run out of orientations:
             // We need to keep backing up until we find a piece with more orientations.
-            // printf("Piece %u: Couldn't place orientation %u/%u\n", piece_placing+1, orientation_placing+1, orientation_counts_history[piece_placing][piece_placing]);
+            // printf("Piece %u: Couldn't place orientation %u/%u\n", piece_history_index+1, orientation_placing+1, orientation_counts_history[piece_placing][piece_placing]);
             do{
                 // Backup, takout a piece, and try placing it differently.
 
-                if (piece_placing == 0){
+                if (piece_history_index == 0){
                     printf("\nTried all the permutations.\n");
                     keep_running = 0;
                     break;
                 }
-
-                --piece_placing; // Trying to place the previous piece again
-                orientation_placing = orientation_history[piece_placing]; // Starting back at the orientation we successfully placed.
-                // printf("Back to piece %u at orientation %u/%u\n", piece_placing+1, orientation_placing+1, orientation_counts_history[piece_placing][piece_placing]);
-                space = space_history[piece_placing]; // Resetting the space to what is was before the previous piece was placed
+                --piece_history_index; // Trying to place the previous piece again
+                orientation_placing = orientation_history[piece_history_index]; // Starting back at the orientation we successfully placed.
+                // printf("Back to piece %u at orientation %u/%u\n", piece_history_index+1, orientation_placing+1, orientation_counts_history[piece_history_index][piece_history_index]);
+                space = space_history[piece_history_index]; // Resetting the space to what is was before the previous piece was placed
+                piece_placing_index = piece_placing_history[piece_history_index];
 
                 // Go to the next orientation:
                 // If that was the last orientation, we loop again to backup even more:
-            } while (++orientation_placing >= orientation_counts_history[piece_placing][piece_placing]);
-            // printf("On to piece %u: orientation %u/%u\n", piece_placing+1, orientation_placing+1, orientation_counts_history[piece_placing][piece_placing]);
+            } while (++orientation_placing >= orientation_counts_history[piece_history_index][piece_placing_index]);
+            // printf("On to piece %u: orientation %u/%u\n", piece_history_index+1, orientation_placing+1, orientation_counts_history[piece_history_index][piece_history_index]);
         } else {
             // Place this piece!
-            if (!orientations_history[piece_placing][piece_placing][orientation_placing]){
-                printf("\nWe're trying to place an empty piece (piece %u, orientation %u!!! :(. Something went wrong.\n\nExiting.\n", piece_placing+1, orientation_placing);
+            geom placing = orientations_history[piece_history_index][piece_placing_index][orientation_placing];
+            #ifdef VERIFY
+            if (!placing){
+                printf("\nWe're trying to place an empty piece (piece %u, orientation %u)!!! :(. Something went wrong.\n\nExiting.\n", piece_placing_index+1, orientation_placing);
                 exit(1);
             }
-
-            #ifdef VERBOSE
-                printf("Placed piece %u/%u with orientation %u/%u.\n", piece_placing+1, NUM_PIECES, orientation_placing+1,
-                    orientation_counts_history[piece_placing][piece_placing]);
+            if (space & placing){
+                printf("\nWe're about to place a piece (piece %u, orientation %u) into the space overlapping another piece!!! :(. Something wen wrong.\n\nExiting.\n", piece_placing_index+1, orientation_placing);
+                exit(1);
+            }
             #endif
 
-            orientation_history[piece_placing] = orientation_placing; // Keeping track of what orientation we're placing
-            space_history[piece_placing] = space; // Keeping track of what the space looked like before we place the piece
-            space |= orientations_history[piece_placing][piece_placing][orientation_placing]; // Putting the piece in the space.
-            ++piece_placing; // Moving on to the next piece
-            orientation_placing = 0; // Starting with the first orientation for the next piece.
+            orientation_history[piece_history_index] = orientation_placing; // Keeping track of what orientation we're placing
+            space_history[piece_history_index] = space; // Keeping track of what the space looked like before we place the piece
+            space |= placing; // Putting the piece in the space.
 
-            if (piece_placing > maximum_piece_placing){
-                maximum_piece_placing = piece_placing;
-                printf("Got down to placing piece %u.\n", piece_placing);
+            #ifndef VERBOSE
+            if (piece_history_index > maximum_piece_placing){
+                maximum_piece_placing = piece_history_index;
+            #endif
+                printf("Placed piece %u (%u/%u) with orientation %u/%u.\n",
+                    piece_placing_index+1,
+                    piece_history_index, NUM_PIECES,
+                    orientation_placing+1,
+                    orientation_counts_history[piece_history_index-1][piece_placing_index]);
+                print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing_history, piece_history_index);
+            #ifndef VERBOSE
             }
+            #endif
+
+            #ifdef DEBUG_SOLUTION
+            for (uint i=0; i<=piece_history_index; ++i){
+                printf("%u ", piece_placing_history[i]);
+            }
+            printf("\n");
+            uint continuous_matches = 0;
+            for (uint i=0; i<=piece_history_index; ++i){
+                geom our_orientation = orientations_history[i][piece_placing_history[i]][orientation_history[i]];
+                if (our_orientation == solution[piece_placing_history[i]]){
+                    printf("+ ", i);
+                    ++continuous_matches;
+                } else {
+                    printf("  ");
+                    continuous_matches = 0;
+                }
+            }
+            printf("\n");
+            #endif
+
+            ++piece_history_index; // Moving on to the next piece
+            orientation_placing = 0; // Starting with the first orientation for the next piece.
 
             // Now, checking if there's any reason to quit or undo this placement.
             // Set backout to true if we need to undo this placement and try the next orientation.
 
             // If we've placed the last piece, we either stop or backout to find more solutions:
-            if (piece_placing == NUM_PIECES){ // Have we placed all the pieces?
+            if (piece_history_index == NUM_PIECES){ // Have we placed all the pieces?
                 #ifdef STOP_AT_FIRST_SOLUTION
                     printf("\nStopping at first solution!\n");
                     break; // We've placed all the pieces: we're done!
                 #else
                     ++solution_count; // Counting this as a solution and continuing.
-                    print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing);
                     backout = true;
                 #endif
             }
@@ -1132,25 +1194,31 @@ int main(){
 
             // Trimming down what remaining pieces and orientations we have:
             // Also, if a piece doesn't fit anymore, we backout.
-            uint remaining_piece = piece_placing;
-            uint *orientations_counts_at_previous_piece = orientation_counts_history[piece_placing-1];
-            uint *orientations_counts_at_this_piece = orientation_counts_history[piece_placing];
-            for (; remaining_piece<NUM_PIECES; ++remaining_piece){ // Loop over remaining pieces
-                geom *piece_orientations = orientations_history[piece_placing-1][remaining_piece];
+            uint *orientations_counts_at_previous_piece = orientation_counts_history[piece_history_index-1];
+            uint *orientations_counts_at_this_piece = orientation_counts_history[piece_history_index];
+            uint smallest_orientations_count = 10000;
+            uint piece_placing_index_for_smallest_orientations_count;
+            for (uint i=0; i<NUM_PIECES; ++i){ // Loop over all pieces
+                if (i == piece_placing_index || orientations_counts_at_previous_piece[i] == 0){ // Zero here is a sentinel for already placed
+                    // printf("Skipping orientations for piece %u\n", i+1);
+                    orientations_counts_at_this_piece[i] = 0; // Setting the sentinel of 0 to mena already placed.
+                    continue; // Only worrying about the  remaining pieces
+                }
+                geom *piece_orientations = orientations_history[piece_history_index-1][i];
                 uint new_orientation_count = 0;
-                uint orientation_count = orientations_counts_at_previous_piece[remaining_piece];
+                uint orientation_count = orientations_counts_at_previous_piece[i];
                 for (uint remaining_orientation=0; remaining_orientation<orientation_count; ++remaining_orientation){ // Loop over it's orientations
                     geom piece_orientation = piece_orientations[remaining_orientation];
                     if (!(space & piece_orientation)){
                         // If this piece still fits in the space in this orientation:
-                        orientations_history[piece_placing][remaining_piece][new_orientation_count] = piece_orientation;
+                        orientations_history[piece_history_index][i][new_orientation_count] = piece_orientation;
                         ++new_orientation_count;
                         #ifdef SPACE_WILL_BE_FULL
                         potential_space_fill |= piece_orientation;
                         #endif
                     }
                 }
-                orientations_counts_at_this_piece[remaining_piece] = new_orientation_count;
+                orientations_counts_at_this_piece[i] = new_orientation_count;
 
                 #ifdef TRACK_PROGRESS
                 new_permutations *= new_orientation_count;
@@ -1162,7 +1230,7 @@ int main(){
                 if (new_orientation_count == 0){ // Some piece does not fit anymore
                     // printf("  backout\n");
                     #ifdef VERBOSE
-                    printf("Backing out: no orientations left for piece %u.\n", remaining_piece);
+                    printf("Backing out: no orientations left for piece %u.\n", i+1);
                     #endif
                     backout = true;
                     #ifdef TRACK_PROGRESS
@@ -1172,6 +1240,12 @@ int main(){
                     // printf("Piece %u does not fit anymore.\n", remaining_piece+1);
                 }
 
+                // Tracking which piece has the fewest orientations left so we can try it next for speed:
+                if (new_orientation_count < smallest_orientations_count){
+                    smallest_orientations_count = new_orientation_count;
+                    piece_placing_index_for_smallest_orientations_count = i;
+                }
+
             }
 
             // Checking if it's still possible to fill in every spot in the space:
@@ -1179,6 +1253,7 @@ int main(){
             if (!backout && potential_space_fill != full_space){
                 #ifdef VERBOSE
                 printf("Backing out: some part of space cannot be filled.\n");
+                // print_space(potential_space_fill);
                 #endif
                 backout = true;
                 #ifdef TRACK_PROGRESS
@@ -1200,39 +1275,45 @@ int main(){
                 #ifdef TRACK_PROGRESS
                 ++backout_are_empty_spaces_factors;
                 #endif
-                // print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing);
 
                 // print_space(space);
                 // return 0;
             }
             #endif
 
-            #ifdef TRACK_PROGRESS
-            // Keep looping over the remaining pieces just to count the orientations for tracking:
-            // for (; remaining_piece<NUM_PIECES; ++remaining_piece){ // Loop over remaining pieces
-            //     printf("mew_orientation_count: %u", orientations_counts_at_previous_piece[remaining_piece])
-            //     new_permutations *= orientations_counts_at_previous_piece[remaining_piece];
-            // }
+            // Figure out the best order to try and place the remaining pieces in:
+            #ifdef VERBOSE
+            if (!backout){
+                printf("Decided to place piece %u next (%u orientations).\n",
+                    piece_placing_index_for_smallest_orientations_count+1,
+                    orientation_counts_history[piece_history_index][piece_placing_index_for_smallest_orientations_count]);
+            }
+            #endif
+            piece_placing_index = piece_placing_index_for_smallest_orientations_count;
+            // piece_placing_index = piece_history_index;
+            piece_placing_history[piece_history_index] = piece_placing_index;
 
-            // printf("Scanning pieces ruled out %e permutations.\n", permutations_history[piece_placing-1] - new_permutations);
+            #ifdef TRACK_PROGRESS
+            // printf("Scanning pieces ruled out %e permutations.\n", permutations_history[piece_history_index-1] - new_permutations);
             permutations_tried += (
-                permutations_history[piece_placing-1] / (double)orientations_counts_at_previous_piece[piece_placing-1]
+                permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_history_index-1]
                 ) - new_permutations;
 
             // printf("%e / %e = %e... - %e = %e\n",
-            //     permutations_history[piece_placing-1],
-            //     (double)orientations_counts_at_previous_piece[piece_placing-1],
-            //     permutations_history[piece_placing-1] / (double)orientations_counts_at_previous_piece[piece_placing-1],
+            //     permutations_history[piece_history_index-1],
+            //     (double)orientations_counts_at_previous_piece[piece_history_index-1],
+            //     permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_history_index-1],
             //     new_permutations,
-            //     (permutations_history[piece_placing-1] / (double)orientations_counts_at_previous_piece[piece_placing-1]) - new_permutations
+            //     (permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_history_index-1]) - new_permutations
             //     );
             // printf("permutations_tried: %e\n", permutations_tried);
             // usleep(200000);
-            permutations_history[piece_placing] = new_permutations;
+            permutations_history[piece_history_index] = new_permutations;
+
             #endif
 
             // if (backout){
-            //     print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing);
+            //     print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing_history, piece_history_index);
             //     #ifdef SPACE_WILL_BE_FULL
             //     print_space(potential_space_fill);
             //     #endif
@@ -1241,10 +1322,11 @@ int main(){
         }
     }
 
-    printf("\nStopped while placing piece %u orientation %u.\n", piece_placing+1, orientation_placing+1);
+    printf("\nStopped while placing piece %u orientation %u.\n", piece_history_index+1, orientation_placing+1);
 
+    #ifdef TRACK_PROGRESS
     printf("Tried %e permutations of %e (%.4f %%).\n", permutations_tried, total_permutations, permutations_tried / total_permutations * 100.0);
-
+    #endif
 
     #ifndef STOP_AT_FIRST_SOLUTION
     printf("Found %u solutions.\n", solution_count);
@@ -1254,17 +1336,19 @@ int main(){
     printf("Space:\n\n");
     print_space(space);
 
-    print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing);
+    print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing_history, piece_history_index);
 
     // printf("Orientations:\n\n");
-    // for (uint i=0; i<piece_placing; ++i){
-    //     printf("Piece %u:\n", i+1);
-    //     // print_piece(orientations_history[i][i][orientation_history[i]]);
-    //     print_space_fill(orientations_history[i][i][orientation_history[i]], i+1);
+    // for (uint i=0; i<piece_history_index; ++i){
+    //     printf("Piece %u:\n", piece_placing_history[i]+1);
+    //     print_piece(orientations_history[i][i][orientation_history[i]]);
+    //     // print_space_fill(orientations_history[i][i][orientation_history[i]], i+1);
     //     printf("\n");
     // }
 
-    printf("Done!\n");
+    duration = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("Done in %.1f seconds.\n", duration);
+    // printf("Done!\n");
 
 
     return 0;
