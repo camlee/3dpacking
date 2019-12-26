@@ -5,9 +5,10 @@
 #include <signal.h>
 #include <time.h>
 
-#define VERIFY
+// #define VERIFY
 // #define DEBUG
 // #define VERBOSE
+// #define SHOW_SOME_PROGRESS
 
 #ifdef DEBUG
     #include <unistd.h>
@@ -30,7 +31,7 @@
 // Note: rotate_piece() only works with cubes right now.
 #define SPACE_WILL_BE_FULL
 
-#define STOP_AT_FIRST_SOLUTION
+// #define STOP_AT_FIRST_SOLUTION
 // #define TRACK_PROGRESS
 // #define DEBUG_SOLUTION
 
@@ -117,7 +118,7 @@ geom l2b(uint x, uint y, uint z){
     return (((geom)1) << (z + (SPACE_DEPTH * y) + (SPACE_DEPTH * SPACE_HEIGHT * x)));
 }
 
-void print_piece(geom piece){
+void print_coordinates(geom piece){
     for (uint x=0; x<SPACE_WIDTH; ++x){
         for (uint y=0; y<SPACE_HEIGHT; ++y){
             for (uint z=0; z<SPACE_DEPTH; ++z){
@@ -207,7 +208,7 @@ void print_space_simple(geom space){
     print_space_fill(space, 1);
 }
 
-void print_space(geom space){
+void _print_space(geom space, char *colour){
 
     for (uint z=0; z<SPACE_DEPTH; ++z){
         printf(" ┌");
@@ -224,7 +225,9 @@ void print_space(geom space){
             printf(" │");
             for (uint x=0; x<SPACE_WIDTH; ++x){
                 if (space & l2b(x, y, z)){
+                    printf(colour);
                     printf(" ■ ");
+                    printf(RESET);
                 } else{
                     printf("   ");
                 }
@@ -241,6 +244,14 @@ void print_space(geom space){
         printf("┘ ");
     }
     printf("\n");
+}
+
+void print_space(geom space){
+    _print_space(space, "");
+}
+
+void print_piece(geom piece, char *color){
+    _print_space(piece, color);
 }
 
 
@@ -801,10 +812,10 @@ int main(){
     // Real problem:
     // Space: 5 x 5 x 5
     #define NUM_PIECES 25
-    geom piece1  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(3,1,0); // color=[238, 238, 0]), # Yellow
-    geom piece2  = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(0,2,0) | l2b(1,2,0); // color=[245, 238, 0]), # Yellow "U"
-    geom piece3  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(0,1,0) | l2b(0,2,0); // color=[255, 165, 0]), # Light Orange "Symetric L"
-    geom piece4  = l2b(0,0,0) | l2b(0,0,1) | l2b(0,0,2) | l2b(0,0,3) | l2b(0,0,4); // color=[255, 180, 0]), # Light Orange "Chocolate Bar"
+    geom piece1  = l2b(0,0,0) | l2b(0,0,1) | l2b(0,0,2) | l2b(0,0,3) | l2b(0,0,4); // color=[255, 180, 0]), # Light Orange "Chocolate Bar"
+    geom piece2  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(3,1,0); // color=[238, 238, 0]), # Yellow
+    geom piece3  = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(0,2,0) | l2b(1,2,0); // color=[245, 238, 0]), # Yellow "U"
+    geom piece4  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(0,1,0) | l2b(0,2,0); // color=[255, 165, 0]), # Light Orange "Symetric L"
     geom piece5  = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,0,1) | l2b(2,0,1); // color=[238, 154, 0]), # Dark Orange "Y-ish"
     geom piece6  = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0) | l2b(2,1,1); // color=[238, 145, 0]), # Dark Orange "L with hook off short end"
     geom piece7  = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(2,0,0) | l2b(2,1,0); // color=[238, 154, 0]), # Dark Orange "L with hook off long end"
@@ -821,67 +832,67 @@ int main(){
     geom piece18 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,0,1) | l2b(2,0,1) | l2b(2,1,1); // color=[173, 255, 47]), # Yellow-Green "Left-handed"
     geom piece19 = l2b(0,0,0) | l2b(0,0,1) | l2b(1,0,0) | l2b(1,1,0) | l2b(2,1,0); // color=[173, 234, 47]), # Yellow-Green "Right-handed"
     geom piece20 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,0,1) | l2b(2,0,0); // color=[154, 255, 154]), # Light Green "Bent Cross"
-    geom piece21 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,1,0) | l2b(2,0,1); // color=[170, 255, 154]), # Light Green "L with hook off side of long end"
+    geom piece21 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(1,0,1) | l2b(2,1,0); // color=[170, 255, 154]), # Light Green "L with hook off middle of long end"
     geom piece22 = l2b(0,0,0) | l2b(1,0,0) | l2b(2,0,0) | l2b(3,0,0) | l2b(2,1,0); // color=[162, 205, 90]), # Olive Green "Rifle"
     geom piece23 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,1,0) | l2b(1,2,0) | l2b(2,1,0); // color=[150, 205, 90]), # Olive Green "Y-ish"
     geom piece24 = l2b(0,0,0) | l2b(1,0,0) | l2b(0,1,0) | l2b(1,1,0) | l2b(1,1,1); // color=[0, 100, 0]), # Dark Green "Base and tower"
     geom piece25 = l2b(0,0,0) | l2b(1,0,0) | l2b(1,0,1) | l2b(1,1,0) | l2b(2,1,0); // color=[20, 100, 0]), # Dark Green "Y-ish"
 
     geom pieces[NUM_PIECES] = {
-        piece4,
-        piece8,
         piece1,
-        piece22,
-        piece6,
-        piece24,
         piece2,
-        piece19,
-        piece11,
         piece3,
-        piece20,
-        piece16,
-        piece15,
-        piece23,
-        piece17,
+        piece4,
         piece5,
-        piece13,
-        piece21,
+        piece6,
         piece7,
+        piece8,
         piece9,
-        piece18,
         piece10,
+        piece11,
         piece12,
+        piece13,
         piece14,
-        piece25
+        piece15,
+        piece16,
+        piece17,
+        piece18,
+        piece19,
+        piece20,
+        piece21,
+        piece22,
+        piece23,
+        piece24,
+        piece25,
     };
 
     //
     char *piece_colors[NUM_PIECES] = {
-        "\e[38;2;255;180;0m",   // piece4: Light Orange "Chocolate Bar"
-        "\e[38;2;255;0;0m",     // piece8: Red "T"
-        "\e[38;2;238;238;0m",   // piece1: Yellow
-        "\e[38;2;162;205;90m",  // piece22: Olive Green "Rifle"
-        "\e[38;2;238;145;0m",   // piece6: Dark Orange "L with hook off short end"
-        "\e[38;2;0;100;0m",     // piece24: Dark Green "Base and tower"
-        "\e[38;2;245;238;0m",   // piece2: Yellow "U"
-        "\e[38;2;173;234;47m",  // piece19: Yellow-Green "Right-handed"
-        "\e[38;2;200;20;0m",    // piece11: Dark Red "L with hook off long end"
-        "\e[38;2;255;165;0m",   // piece3: Light Orange "Symetric L"
-        "\e[38;2;154;255;154m", // piece20: Light Green "Bent Cross"
-        "\e[38;2;0;128;128m",   // piece16: Teal "Foam finger"
-        "\e[38;2;0;20;205m",    // piece15: Blue "L with hook off middle of long end"
-        "\e[38;2;150;205;90m",  // piece23: Olive Green "Y-ish"
-        "\e[38;2;20;128;128m",  // piece17: Teal "Z"
+        "\e[38;2;255;180;0m",   // piece1: Light Orange "Chocolate Bar"
+        "\e[38;2;238;238;0m",   // piece2: Yellow
+        "\e[38;2;245;238;0m",   // piece3: Yellow "U"
+        "\e[38;2;255;165;0m",   // piece4: Light Orange "Symetric L"
         "\e[38;2;238;154;0m",   // piece5: Dark Orange "Y-ish"
-        "\e[38;2;142;40;142m",  // piece13: Purple "Cross"
-        "\e[38;2;170;255;154m", // piece21: Light Green "L with hook off side of long end"
+        "\e[38;2;238;145;0m",   // piece6: Dark Orange "L with hook off short end"
         "\e[38;2;238;154;0m",   // piece7: Dark Orange "L with hook off long end"
+        "\e[38;2;255;0;0m",     // piece8: Red "T"
         "\e[38;2;255;0;20m",    // piece9: Red "W"
-        "\e[38;2;173;255;47m",  // piece18: Yellow-Green "Left-handed"
         "\e[38;2;200;0;0m",     // piece10: Dark Red "L" with hook off corner"
+        "\e[38;2;200;20;0m",    // piece11: Dark Red "L with hook off long end"
         "\e[38;2;142;56;142m",  // piece12: Purple "L"
+        "\e[38;2;142;40;142m",  // piece13: Purple "Cross"
         "\e[38;2;0;0;205m",     // piece14: Blue "Two towers"
-        "\e[38;2;20;100;0m"     // piece25: Dark Green "Y-ish"
+        "\e[38;2;0;20;205m",    // piece15: Blue "L with hook off middle of long end"
+        "\e[38;2;0;128;128m",   // piece16: Teal "Foam finger"
+        "\e[38;2;20;128;128m",  // piece17: Teal "Z"
+        "\e[38;2;173;255;47m",  // piece18: Yellow-Green "Left-handed"
+        "\e[38;2;173;234;47m",  // piece19: Yellow-Green "Right-handed"
+        "\e[38;2;154;255;154m", // piece20: Light Green "Bent Cross"
+        "\e[38;2;170;255;154m", // piece21: Light Green "L with hook off middle of long end"
+        "\e[38;2;162;205;90m",  // piece22: Olive Green "Rifle"
+        "\e[38;2;150;205;90m",  // piece23: Olive Green "Y-ish"
+        "\e[38;2;0;100;0m",     // piece24: Dark Green "Base and tower"
+        "\e[38;2;20;100;0m",    // piece25: Dark Green "Y-ish"
     };
 
     void print_colored_pieces_in_space(
@@ -1138,12 +1149,14 @@ int main(){
             if (piece_history_index > maximum_piece_placing){
                 maximum_piece_placing = piece_history_index;
             #endif
+            #if VERBOSE || SHOW_SOME_PROGRESS
                 printf("Placed piece %u (%u/%u) with orientation %u/%u.\n",
                     piece_placing_index+1,
                     piece_history_index, NUM_PIECES,
                     orientation_placing+1,
                     orientation_counts_history[piece_history_index-1][piece_placing_index]);
                 print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing_history, piece_history_index);
+            #endif
             #ifndef VERBOSE
             }
             #endif
@@ -1180,6 +1193,8 @@ int main(){
                     break; // We've placed all the pieces: we're done!
                 #else
                     ++solution_count; // Counting this as a solution and continuing.
+                    printf("Solution %u:\n", solution_count);
+                    print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing_history, piece_history_index);
                     backout = true;
                 #endif
             }
@@ -1296,15 +1311,15 @@ int main(){
             #ifdef TRACK_PROGRESS
             // printf("Scanning pieces ruled out %e permutations.\n", permutations_history[piece_history_index-1] - new_permutations);
             permutations_tried += (
-                permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_history_index-1]
+                permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_placing_history[piece_history_index-1]]
                 ) - new_permutations;
 
             // printf("%e / %e = %e... - %e = %e\n",
             //     permutations_history[piece_history_index-1],
-            //     (double)orientations_counts_at_previous_piece[piece_history_index-1],
-            //     permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_history_index-1],
+            //     (double)orientations_counts_at_previous_piece[piece_placing_history[piece_history_index-1]],
+            //     permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_placing_history[piece_history_index-1]],
             //     new_permutations,
-            //     (permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_history_index-1]) - new_permutations
+            //     (permutations_history[piece_history_index-1] / (double)orientations_counts_at_previous_piece[piece_placing_history[piece_history_index-1]]) - new_permutations
             //     );
             // printf("permutations_tried: %e\n", permutations_tried);
             // usleep(200000);
@@ -1338,13 +1353,14 @@ int main(){
 
     print_colored_pieces_in_space(orientations_history, orientation_history, piece_placing_history, piece_history_index);
 
-    // printf("Orientations:\n\n");
-    // for (uint i=0; i<piece_history_index; ++i){
-    //     printf("Piece %u:\n", piece_placing_history[i]+1);
-    //     print_piece(orientations_history[i][i][orientation_history[i]]);
-    //     // print_space_fill(orientations_history[i][i][orientation_history[i]], i+1);
-    //     printf("\n");
-    // }
+    printf("Orientations:\n\n");
+    for (uint i=0; i<piece_history_index; ++i){
+        printf("Piece %u:\n", piece_placing_history[i]+1);
+        uint piece_index = piece_placing_history[i];
+        print_piece(orientations_history[i][piece_index][orientation_history[i]], piece_colors[piece_index]);
+        // print_space_fill(orientations_history[i][i][orientation_history[i]], i+1);
+        printf("\n");
+    }
 
     duration = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("Done in %.1f seconds.\n", duration);
